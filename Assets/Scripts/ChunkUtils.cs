@@ -50,6 +50,7 @@ public static class ChunkUtils
                     Debug.LogWarning("voxel in the other chunk is null");
                     return false;
                 }
+                //bug
                 if (nextChunkVoxel is SolidVoxel && voxel is SolidVoxel) return false;
                 return true;
             }
