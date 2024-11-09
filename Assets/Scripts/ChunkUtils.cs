@@ -18,7 +18,7 @@ public static class ChunkUtils
             Debug.LogWarning("voxel is null");
             return false;
         }
-        if (voxel == Voxel.Empty) return false;
+        if (voxel == Voxel.Empty) return true;
 
         int newX = x + (int)direction.x;
         int newY = y + (int)direction.y;
@@ -34,23 +34,23 @@ public static class ChunkUtils
             GameObject nextChunk;
             if (chunk.chunkPool.activeChunks.TryGetValue(new Vector2Int(chunk.x + (int)direction.x, chunk.y + (int)direction.z), out nextChunk))
             {
-                if (nextChunk == null)
-                {
-                    Debug.LogWarning("other chunk is null");
-                    return false;
-                }
                 if (newX < 0) newX = 15;
                 if (newX >= 16) newX = 0;
                 if (newZ < 0) newZ = 15;
                 if (newZ >= 16) newZ = 0;
 
-                Voxel nextChunkVoxel = nextChunk.GetComponent<Chunk>().voxels[newX, y, newZ];
+                Chunk nextChunkScript = nextChunk.GetComponent<Chunk>();
+                if (nextChunkScript != null)
+                {
+                    Debug.LogWarning("next chunk's script is null");
+                    return false;
+                }
+                Voxel nextChunkVoxel = nextChunkScript.voxels[newX, y, newZ];
                 if (nextChunkVoxel == null)
                 {
                     Debug.LogWarning("voxel in the other chunk is null");
                     return false;
                 }
-                //bug
                 if (nextChunkVoxel is SolidVoxel && voxel is SolidVoxel) return false;
                 return true;
             }
