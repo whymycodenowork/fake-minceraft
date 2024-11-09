@@ -33,10 +33,8 @@ public static class ChunkUtils
         {
             if (chunk.chunkPool.activeChunks.TryGetValue(new Vector2Int(chunk.x + (int)direction.x, chunk.y + (int)direction.z), out GameObject nextChunk))
             {
-                if (newX < 0) newX = 15;
-                if (newX >= 16) newX = 0;
-                if (newZ < 0) newZ = 15;
-                if (newZ >= 16) newZ = 0;
+                newX = (newX + 16) % 16;
+                newZ = (newZ + 16) % 16;
                 Voxel nextChunkVoxel = nextChunk.GetComponent<Chunk>().voxels[newX, y, newZ];
                 if (nextChunkVoxel == null)
                 {
@@ -65,15 +63,15 @@ public static class ChunkUtils
         int newZ = z + (int)direction.z;
 
         if (newY >= 255) {
-            nextPosition = new Vector3Int(0, 0, 0);
+            nextPosition = Vector3Int.zero;
             nextVoxel = Voxel.Empty;
-            nextChunkPos = new Vector2Int(0, 0);
+            nextChunkPos = Vector2Int.zero;
             return false;
         }
         if (newY < 0) {
-            nextPosition = new Vector3Int(0, 0, 0);
+            nextPosition = Vector3Int.zero;
             nextVoxel = Voxel.Empty;
-            nextChunkPos = new Vector2Int(0, 0);
+            nextChunkPos = Vector2Int.zero;
             return false;
         }
 
@@ -86,18 +84,16 @@ public static class ChunkUtils
             {
                 Chunk nextChunkScript = nextChunk.GetComponent<Chunk>();
 
-                if (newX < 0) newX = 15;
-                if (newX >= 16) newX = 0;
-                if (newZ < 0) newZ = 15;
-                if (newZ >= 16) newZ = 0;
-                nextPosition = new Vector3Int(newX, newY, newZ);
+                newX = (newX + 16) % 16;
+                newZ = (newZ + 16) % 16;
+                nextPosition = new Vector3Int(newX, y, newZ);
                 nextVoxel = nextChunkScript.voxels[newX, y, newZ];
                 nextChunkPos = new Vector2Int(nextChunkScript.x, nextChunkScript.y);
                 return true;
             }
-            nextPosition = new Vector3Int(0, 0, 0);
+            nextPosition = Vector3Int.zero;
             nextVoxel = Voxel.Empty;
-            nextChunkPos = new Vector2Int(0, 0);
+            nextChunkPos = Vector2Int.zero;
             return false;
         }
         nextPosition = new Vector3Int(newX, newY, newZ);
