@@ -40,7 +40,7 @@ public static class ChunkUtils
                 if (newZ >= 16) newZ = 0;
 
                 Chunk nextChunkScript = nextChunk.GetComponent<Chunk>();
-                if (nextChunkScript != null)
+                if (nextChunkScript == null)
                 {
                     Debug.LogWarning("next chunk's script is null");
                     return false;
