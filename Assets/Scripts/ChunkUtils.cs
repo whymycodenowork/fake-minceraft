@@ -31,21 +31,13 @@ public static class ChunkUtils
 
         if (isOutOfBounds)
         {
-            GameObject nextChunk;
-            if (chunk.chunkPool.activeChunks.TryGetValue(new Vector2Int(chunk.x + (int)direction.x, chunk.y + (int)direction.z), out nextChunk))
+            if (chunk.chunkPool.activeChunks.TryGetValue(new Vector2Int(chunk.x + (int)direction.x, chunk.y + (int)direction.z), out GameObject nextChunk))
             {
                 if (newX < 0) newX = 15;
                 if (newX >= 16) newX = 0;
                 if (newZ < 0) newZ = 15;
                 if (newZ >= 16) newZ = 0;
-
-                Chunk nextChunkScript = nextChunk.GetComponent<Chunk>();
-                if (nextChunkScript == null)
-                {
-                    Debug.LogWarning("next chunk's script is null");
-                    return false;
-                }
-                Voxel nextChunkVoxel = nextChunkScript.voxels[newX, y, newZ];
+                Voxel nextChunkVoxel = nextChunk.GetComponent<Chunk>().voxels[newX, y, newZ];
                 if (nextChunkVoxel == null)
                 {
                     Debug.LogWarning("voxel in the other chunk is null");

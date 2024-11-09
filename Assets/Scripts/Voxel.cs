@@ -65,12 +65,8 @@ namespace Voxels
 
     public abstract class FluidVoxel : Voxel
     {
-        public float height;
+        public float height = 100f;
         public abstract float SpreadFactor { get; }
-        public FluidVoxel(float height = 100f)
-        {
-            this.height = height;
-        }
     }
 
     public abstract class InteractableVoxel : BreakableVoxel
@@ -129,10 +125,6 @@ namespace Voxels
         {
             public override byte TextureID => 3;
             public override float SpreadFactor => 2f;
-            public Water(float height = 100f) : base(height)
-            {
-
-            }
         }
     }
 }

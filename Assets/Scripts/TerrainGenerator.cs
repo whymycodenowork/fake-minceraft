@@ -61,7 +61,7 @@ public class TerrainGenerator : MonoBehaviour
                     else if (y > heightAtPoint && y <= 60)
                     {
                         // Water
-                        terrain[x, y, z] = new Water(100f);
+                        terrain[x, y, z] = new Water();
                     }
 
                     else
