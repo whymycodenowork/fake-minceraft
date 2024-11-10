@@ -35,7 +35,12 @@ public static class ChunkUtils
             {
                 newX = (newX + 16) % 16;
                 newZ = (newZ + 16) % 16;
-                Voxel nextChunkVoxel = nextChunk.GetComponent<Chunk>().voxels[newX, y, newZ];
+                Voxel[,,] nextChunkVoxels = nextChunk.GetComponent<Chunk>().voxels;
+                if (nextChunkVoxels == null)
+                {
+                    return false;
+                }
+                Voxel nextChunkVoxel = nextChunkVoxels[newX, y, newZ];
                 if (nextChunkVoxel == null)
                 {
                     Debug.LogWarning("voxel in the other chunk is null");
@@ -87,7 +92,16 @@ public static class ChunkUtils
                 newX = (newX + 16) % 16;
                 newZ = (newZ + 16) % 16;
                 nextPosition = new Vector3Int(newX, y, newZ);
-                nextVoxel = nextChunkScript.voxels[newX, y, newZ];
+                Voxel[,,] nextChunkVoxels = nextChunkScript.voxels;
+                if (nextChunkVoxels == null)
+                {
+                    nextPosition = Vector3Int.zero;
+                    nextVoxel = Voxel.Empty;
+                    nextChunkPos = Vector2Int.zero;
+                    return false;
+                }
+                nextVoxel = nextChunkVoxels[newX, y, newZ];
+                Voxel nextChunkVoxel = nextChunkVoxels[newX, y, newZ];
                 nextChunkPos = new Vector2Int(nextChunkScript.x, nextChunkScript.y);
                 return true;
             }
