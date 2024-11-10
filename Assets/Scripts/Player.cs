@@ -69,6 +69,11 @@ public class Player : MonoBehaviour
         {
             movementSpeed = baseMovementSpeed;
         }
+
+        if (!chunkPool.activeChunks.ContainsKey(GetChunkPosition(transform.position, out Vector3 n)))
+        {
+            MyRigidbody.velocity = Vector3.zero;
+        }
         DetectInteractions();
     }
 
@@ -180,7 +185,7 @@ public class Player : MonoBehaviour
 
     void Interact(int mouseButton, Vector3Int position, Vector3 direction)
     {
-        GetChunkPosition(position, out Vector2Int chunkCoords, out Vector3 localPosition);
+        Vector2Int chunkCoords = GetChunkPosition(position, out Vector3 localPosition);
 
         // Ensure the position is within chunk bounds before interacting
         if (chunkPool.activeChunks.TryGetValue(chunkCoords, out GameObject hitChunk))
@@ -208,12 +213,11 @@ public class Player : MonoBehaviour
         }
     }
 
-    void GetChunkPosition(Vector3 location, out Vector2Int chunkCoords, out Vector3 localPosition)
+    Vector2Int GetChunkPosition(Vector3 location, out Vector3 localPosition)
     {
         // Calculate chunk coordinates
         int chunkX = Mathf.FloorToInt(location.x / chunkSize);
         int chunkZ = Mathf.FloorToInt(location.z / chunkSize);
-        chunkCoords = new Vector2Int(chunkX, chunkZ);
 
         // Calculate local position within the chunk
         float localX = location.x % chunkSize;
@@ -224,5 +228,6 @@ public class Player : MonoBehaviour
         if (localZ < 0) localZ += chunkSize;
 
         localPosition = new Vector3(localX, location.y, localZ);
+        return new Vector2Int(chunkX, chunkZ);
     }
 }

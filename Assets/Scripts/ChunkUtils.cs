@@ -56,7 +56,7 @@ public static class ChunkUtils
             Debug.Log("other voxel is null");
             return false;
         }
-        if (chunk.voxels[newX, newY, newZ].GetType() == voxel.GetType()) return false;
+        if (chunk.voxels[newX, newY, newZ] is SolidVoxel && voxel is SolidVoxel) return false;
         return true;
     }
 
