@@ -12,6 +12,7 @@ public static class ChunkUtils
             Debug.LogWarning("chunk is null");
             return false;
         }
+
         Voxel voxel = chunk.voxels[x, y, z];
         if (voxel == null)
         {
@@ -24,39 +25,51 @@ public static class ChunkUtils
         int newY = y + (int)direction.y;
         int newZ = z + (int)direction.z;
 
-        if (newY >= 255) return true;
+        const int MaxHeight = 255;
+        const int ChunkSize = 16;
+
+        if (newY >= MaxHeight) return true;
         if (newY < 0) return false;
 
-        bool isOutOfBounds = newX < 0 || newX >= 16 || newZ < 0 || newZ >= 16;
+        bool isOutOfBounds = newX < 0 || newX >= ChunkSize || newZ < 0 || newZ >= ChunkSize;
 
         if (isOutOfBounds)
         {
-            if (chunk.chunkPool.activeChunks.TryGetValue(new Vector2Int(chunk.x + (int)direction.x, chunk.y + (int)direction.z), out GameObject nextChunk))
+            Vector2Int targetChunkCoord = new Vector2Int(chunk.x + (int)direction.x, chunk.y + (int)direction.z);
+
+            if (chunk.chunkPool.activeChunks.TryGetValue(targetChunkCoord, out GameObject nextChunk))
             {
-                newX = (newX + 16) % 16;
-                newZ = (newZ + 16) % 16;
+                newX = (newX + ChunkSize) % ChunkSize;
+                newZ = (newZ + ChunkSize) % ChunkSize;
                 Voxel[,,] nextChunkVoxels = nextChunk.GetComponent<Chunk>().voxels;
+
                 if (nextChunkVoxels == null)
                 {
+                    Debug.LogWarning("Next chunk voxels are null");
                     return false;
                 }
-                Voxel nextChunkVoxel = nextChunkVoxels[newX, y, newZ];
+
+                Voxel nextChunkVoxel = nextChunkVoxels[newX, newY, newZ];
                 if (nextChunkVoxel == null)
                 {
-                    Debug.LogWarning("voxel in the other chunk is null");
+                    Debug.LogWarning("Voxel in the neighboring chunk is null");
                     return false;
                 }
                 if (nextChunkVoxel is SolidVoxel && voxel is SolidVoxel) return false;
+
                 return true;
             }
             return false;
         }
-        if (chunk.voxels[newX, newY, newZ] == null)
+
+        Voxel neighborVoxel = chunk.voxels[newX, newY, newZ];
+        if (neighborVoxel == null)
         {
-            Debug.Log("other voxel is null");
+            Debug.Log("Other voxel is null");
             return false;
         }
-        if (chunk.voxels[newX, newY, newZ] is SolidVoxel && voxel is SolidVoxel) return false;
+        if (neighborVoxel is SolidVoxel && voxel is SolidVoxel) return false;
+
         return true;
     }
 

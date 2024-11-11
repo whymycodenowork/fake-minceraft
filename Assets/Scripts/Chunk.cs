@@ -90,8 +90,8 @@ public class Chunk : MonoBehaviour
                         AddFaceIfNeeded(vertices, textureToTriangles[(voxel.TextureID, i)], uvs, new Vector3(x, y, z), direction);
                     }
                 }
+                if (y % 2 == 0) yield return null;
             }
-            if (x % 2 == 0) yield return null;
         }
 
         // Finalize the mesh data
