@@ -56,6 +56,7 @@ public class Chunk : MonoBehaviour
 
     IEnumerator GenerateMeshDataOverTime()
     {
+        meshFilter.sharedMesh = null;
         Mesh mesh = new Mesh();
         List<Vector3> vertices = new List<Vector3>();
         List<Vector2> uvs = new List<Vector2>();
@@ -80,8 +81,8 @@ public class Chunk : MonoBehaviour
                 for (int z = 0; z < 16; z++)
                 {
                     Voxel voxel = voxels[x, y, z];
-                    if (voxel == Voxel.Empty) continue; // Skip empty voxels
-
+                    if (voxel is AirVoxel) continue; // Skip empty voxels
+                    Debug.Log($"making mesh for {voxel}");
                     // Assign faces to corresponding texture groups
 
                     for (int i = 0; i < 6; i++) // Loop through each face direction

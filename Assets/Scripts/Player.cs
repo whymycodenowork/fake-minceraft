@@ -69,11 +69,9 @@ public class Player : MonoBehaviour
         {
             movementSpeed = baseMovementSpeed;
         }
-
-        if (!chunkPool.activeChunks.ContainsKey(GetChunkPosition(transform.position, out Vector3 n)))
-        {
-            MyRigidbody.velocity = Vector3.zero;
-        }
+        Vector2Int currentChunkPos = GetChunkPosition(transform.position, out Vector3 n);
+        if (!chunkPool.activeChunks.ContainsKey(currentChunkPos)) MyRigidbody.velocity = Vector3.zero;
+        else if (chunkPool.activeChunks[currentChunkPos.x, currentChunkPos.y].meshFilter.sharedMesh == null) MyRigidbody.velocity = Vector3.zero;
         DetectInteractions();
     }
 

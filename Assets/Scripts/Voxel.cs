@@ -17,9 +17,9 @@ namespace Voxels
 
         public abstract byte TextureID { get; }
 
-        public overide ToString()
+        public override string ToString()
         {
-            return exists + ", " + TextureID;
+            return $"Voxel exists: {exists}, TextureID: {TextureID}, Type: {this.GetType()}";
         }
     }
 
