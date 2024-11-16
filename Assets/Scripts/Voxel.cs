@@ -16,6 +16,11 @@ namespace Voxels
         public static readonly AirVoxel Empty = new AirVoxel();
 
         public abstract byte TextureID { get; }
+
+        public overide ToString()
+        {
+            return exists + ", " + TextureID;
+        }
     }
 
     public class AirVoxel : Voxel
