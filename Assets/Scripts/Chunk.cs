@@ -16,9 +16,9 @@ public class Chunk : MonoBehaviour
     public int y;
     public bool isDirty;
 
-    private MeshFilter meshFilter;
-    private MeshCollider meshCollider;
-    private MeshRenderer meshRenderer;
+    public MeshFilter meshFilter;
+    public MeshCollider meshCollider;
+    public MeshRenderer meshRenderer;
 
     void Start()
     {
