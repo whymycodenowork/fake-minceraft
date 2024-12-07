@@ -117,7 +117,11 @@ public class Chunk : MonoBehaviour
         directionsArray.Dispose();
         faceVerticesArray.Dispose();
         faceUVsArray.Dispose();
-        meshGenerationJob.Dispose();
+
+        // Ensure NativeList allocations are disposed of in the MeshGenerationJob
+        meshGenerationJob.vertices.Dispose();
+        meshGenerationJob.triangles.Dispose();
+        meshGenerationJob.uvs.Dispose();
 
         yield return null;
     }
@@ -161,6 +165,7 @@ public struct MeshGenerationJob : IJob
 
     public void Execute()
     {
+        NativeArray<int> addTriangles = new NativeArray<int>(6, Allocator.TempJob);
         for (int x = 0; x < chunkSize; x++)
         {
             for (int y = 0; y < chunkHeight; y++)
@@ -182,7 +187,6 @@ public struct MeshGenerationJob : IJob
                         }
 
                         uvs.AddRange(faceUVs);
-                        NativeArray<int> addTriangles = new NativeArray<int>(6, Allocator.TempJob);
                         addTriangles[0] = startIndex;
                         addTriangles[1] = startIndex + 2;
                         addTriangles[2] = startIndex + 1;
@@ -190,11 +194,11 @@ public struct MeshGenerationJob : IJob
                         addTriangles[4] = startIndex + 2;
                         addTriangles[5] = startIndex + 3;
                         triangles.AddRange(addTriangles);
-                        addTriangles.Dispose();
                     }
                 }
             }
         }
+        addTriangles.Dispose();
     }
 
     public void Dispose()
