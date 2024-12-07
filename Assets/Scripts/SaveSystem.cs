@@ -10,8 +10,7 @@ public static class SaveSystem
 {
     private static List<Type> voxelTypes = new List<Type>();
 
-    // Static constructor to initialize the voxel types (only in the editor)
-#if UNITY_EDITOR
+    // Static constructor to initialize the voxel type
     static SaveSystem()
     {
         CacheVoxelTypes();
@@ -24,7 +23,6 @@ public static class SaveSystem
             .Where(t => typeof(Voxel).IsAssignableFrom(t) && !t.IsAbstract)
             .ToList();
     }
-#endif
 
     public static void SaveChunk(string path, int x, int y, Voxel[,,] voxels)
     {

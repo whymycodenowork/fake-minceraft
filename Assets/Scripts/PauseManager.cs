@@ -7,12 +7,13 @@ public class PauseManager : MonoBehaviour
     public GameObject pauseMenuUI; // Reference to the pause menu UI
     public GameObject pauseMain;
     public GameObject pauseSettings;
-    public bool isPaused = false; // Track whether the game is paused
+    public static bool isPaused = false; // Track whether the game is paused
 
-    void Start()
+    void Awake()
     {
         Resume();
         pauseSettings.SetActive(false);
+        TextureManager.InitializeMaterials();
     }
 
     void Update()

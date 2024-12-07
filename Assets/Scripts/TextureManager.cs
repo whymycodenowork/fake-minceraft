@@ -3,17 +3,10 @@ using UnityEngine;
 
 public static class TextureManager
 {
-    public static Material[,] materials;
-
-    // Static constructor (runs once when the class is first accessed)
-    static TextureManager()
+    public static void InitializeMaterials()
     {
-        InitializeMaterials();
-    }
-
-    // Static method to initialize materials
-    private static void InitializeMaterials()
-    {
+        // it is called in PauseManger.Awake() cuz i dont wanna make another object
+        Material[,] materials;
         int amountOfImages = Directory.GetFiles("Assets/Images", "*.png").Length;
 
         materials = new Material[amountOfImages, 6];
@@ -38,6 +31,7 @@ public static class TextureManager
             }
         }
 
+        Chunk.materials = materials;
         Debug.Log("Materials initialized.");
     }
 }

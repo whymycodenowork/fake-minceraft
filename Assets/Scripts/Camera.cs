@@ -5,7 +5,6 @@ using UnityEngine;
 public class CameraFollowPlayer : MonoBehaviour
 {
     public Transform player;
-    public PauseManager pauseManager;
     public Vector2 turn;
     public float sensitivity;
     public bool thirdPerson;
@@ -13,6 +12,8 @@ public class CameraFollowPlayer : MonoBehaviour
     public LayerMask collisionLayers; // Layers to check for collisions
 
     private Vector3 desiredPosition;
+
+    public GameObject inventory;
 
     // Start is called before the first frame update
     void Start()
@@ -26,7 +27,7 @@ public class CameraFollowPlayer : MonoBehaviour
         // Handle pauses and third person
         transform.position = new Vector3(player.position.x, player.position.y + 0.5f, player.position.z);
 
-        if (!pauseManager.isPaused)
+        if (!(PauseManager.isPaused || inventory.activeSelf))
         {
             Cursor.lockState = CursorLockMode.Locked;
             turn.x += -Input.GetAxis("Mouse Y") * sensitivity;

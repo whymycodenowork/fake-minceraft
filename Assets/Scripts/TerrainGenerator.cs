@@ -1,7 +1,7 @@
+using UnityEngine;
 using Voxels;
 using Voxels.Solid;
 using Voxels.Fluid;
-using UnityEngine;
 
 public class TerrainGenerator : MonoBehaviour
 {
