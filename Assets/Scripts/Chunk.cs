@@ -39,6 +39,8 @@ public class Chunk : MonoBehaviour
         new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, 0), new Vector2(1, 0)
     };
 
+    private Coroutine currentMeshJob;
+
     void Awake()
     {
         meshFilter = GetComponent<MeshFilter>();
@@ -53,6 +55,15 @@ public class Chunk : MonoBehaviour
         CreateMesh();
     }
 
+    void OnDisable()
+    {
+        if (currentMeshJob != null)
+        {
+            StopCoroutine(currentMeshJob);
+            currentMeshJob = null;
+        }
+    }
+
     public void CreateMesh() => isDirty = true;
 
     public void UpdateMeshLocal(int x, int y, int z) => CreateMesh();
@@ -61,7 +72,11 @@ public class Chunk : MonoBehaviour
     {
         if (isDirty)
         {
-            StartCoroutine(GenerateMeshDataOverTime());
+            if (currentMeshJob != null)
+            {
+                StopCoroutine(currentMeshJob);
+            }
+            currentMeshJob = StartCoroutine(GenerateMeshDataOverTime());
             isDirty = false;
         }
     }
@@ -69,22 +84,19 @@ public class Chunk : MonoBehaviour
     IEnumerator GenerateMeshDataOverTime()
     {
         NativeArray<byte> textureIDs = FlattenArray(voxels);
+        NativeArray<Vector3Int> directionsArray = new NativeArray<Vector3Int>(directions, Allocator.Persistent);
+        NativeArray<Vector3> faceVerticesArray = new NativeArray<Vector3>(faceVertices, Allocator.Persistent);
+        NativeArray<Vector2> faceUVsArray = new NativeArray<Vector2>(faceUVs, Allocator.Persistent);
 
-        // Using TempJob allocator for the NativeArrays
-        NativeArray<Vector3Int> directionsArray = new NativeArray<Vector3Int>(directions, Allocator.TempJob);
-        NativeArray<Vector3> faceVerticesArray = new NativeArray<Vector3>(faceVertices, Allocator.TempJob);
-        NativeArray<Vector2> faceUVsArray = new NativeArray<Vector2>(faceUVs, Allocator.TempJob);
-
-        // Mesh generation job setup
         MeshGenerationJob meshGenerationJob = new MeshGenerationJob
         {
             textureIDs = textureIDs,
             directions = directionsArray,
             faceVertices = faceVerticesArray,
             faceUVs = faceUVsArray,
-            vertices = new NativeList<Vector3>(Allocator.TempJob),
-            triangles = new NativeList<int>(Allocator.TempJob),
-            uvs = new NativeList<Vector2>(Allocator.TempJob),
+            vertices = new NativeList<Vector3>(Allocator.Persistent),
+            triangles = new NativeList<int>(Allocator.Persistent),
+            uvs = new NativeList<Vector2>(Allocator.Persistent),
             chunkSize = 16,
             chunkHeight = 255
         };
@@ -92,36 +104,30 @@ public class Chunk : MonoBehaviour
         JobHandle jobHandle = meshGenerationJob.Schedule();
         jobHandle.Complete();
 
-        // Create the mesh with the generated data
         Mesh mesh = new Mesh();
+        try
+        {
+            mesh.SetVertices(meshGenerationJob.vertices.ToArray(Allocator.TempJob));
+            mesh.SetTriangles(meshGenerationJob.triangles.ToArray(), 0);
+            mesh.SetUVs(0, meshGenerationJob.uvs.AsArray());
 
-        // Convert NativeList to arrays and set mesh data
-        var verticesArray = meshGenerationJob.vertices.ToArray(Allocator.TempJob);
-        mesh.SetVertices(verticesArray);
-        verticesArray.Dispose();
+            if (meshFilter.mesh != null) Destroy(meshFilter.mesh);
+            if (meshCollider.sharedMesh != null) Destroy(meshCollider.sharedMesh);
 
-        var trianglesArray = meshGenerationJob.triangles.ToArray(Allocator.TempJob);
-        mesh.SetTriangles(trianglesArray.ToArray(), 0);
-        trianglesArray.Dispose();
+            meshFilter.mesh = mesh;
+            meshCollider.sharedMesh = mesh;
+        }
+        finally
+        {
+            textureIDs.Dispose();
+            directionsArray.Dispose();
+            faceVerticesArray.Dispose();
+            faceUVsArray.Dispose();
 
-        var uvsArray = meshGenerationJob.uvs.AsArray();
-        mesh.SetUVs(0, uvsArray);
-        uvsArray.Dispose();
-
-        // Apply the mesh to the mesh filter and collider
-        meshFilter.mesh = mesh;
-        meshCollider.sharedMesh = mesh;
-
-        // Clean up all temporary allocations
-        textureIDs.Dispose();
-        directionsArray.Dispose();
-        faceVerticesArray.Dispose();
-        faceUVsArray.Dispose();
-
-        // Ensure NativeList allocations are disposed of in the MeshGenerationJob
-        meshGenerationJob.vertices.Dispose();
-        meshGenerationJob.triangles.Dispose();
-        meshGenerationJob.uvs.Dispose();
+            meshGenerationJob.vertices.Dispose();
+            meshGenerationJob.triangles.Dispose();
+            meshGenerationJob.uvs.Dispose();
+        }
 
         yield return null;
     }
@@ -199,12 +205,5 @@ public struct MeshGenerationJob : IJob
             }
         }
         addTriangles.Dispose();
-    }
-
-    public void Dispose()
-    {
-        vertices.Dispose();
-        triangles.Dispose();
-        uvs.Dispose();
     }
 }
