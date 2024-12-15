@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using Unity.Collections;
 
 namespace Voxels
 {
@@ -132,14 +131,5 @@ namespace Voxels
             public override byte TextureID => 3;
             public override float SpreadFactor => 2f;
         }
-    }
-
-    public struct ChunkData
-    {
-        public NativeArray<byte> textureIDs;          // Main chunk texture IDs
-        public NativeArray<byte> types;              // Main chunk types
-        public NativeArray<byte>[] neighborTextureIDs; // Neighbor texture IDs (left, right, front, back)
-        public NativeArray<byte>[] neighborTypes;      // Neighbor types (left, right, front, back)
-        public int chunkSize;                        // Size of the chunk
     }
 }

@@ -1,7 +1,5 @@
 using Voxels;
-using System.Threading.Tasks;
 using UnityEngine;
-
 public class Player : MonoBehaviour
 {
     public Rigidbody MyRigidbody;
@@ -9,120 +7,119 @@ public class Player : MonoBehaviour
     public float baseMovementSpeed;
     public float movementSpeed;
     public float jumpHeight;
-    public LayerMask groundLayer;
-    public GameObject boxPrefab;
-    public bool canFly;
-    public Voxel selectedBlock = new Voxels.Solid.Cobblestone();
-    public float selectDistance = 5f;
-
     private bool isGrounded;
-    private bool isFlying;
-    private bool isWaiting = false;
     private Vector3 currentVelocity = Vector3.zero;
     private const int chunkSize = 16;
     private GameObject indicatorBox;
+    public LayerMask groundLayer;
+    public float selectDistance = 5;
+    public GameObject boxPrefab;
+    public ChunkPool chunkPool;
+    public bool canFly;
+    public Voxel selectedBlock = new Voxels.Solid.Cobblestone();
 
-    private const int doublePressDelay = 400; // change later
-
+    // Start is called before the first frame update
     void Start()
     {
-        InitializeIndicatorBox();
-    }
-
-    void Update()
-    {
-        HandleInput();
-        MovePlayer();
-        ApplyHorizontalDrag();
-        HandleChunkBounds();
-        DetectInteractions();
-    }
-
-    void InitializeIndicatorBox()
-    {
+        // Instantiate the indicator box once and disable it initially
         indicatorBox = Instantiate(boxPrefab);
         indicatorBox.transform.localScale = new Vector3(1.05f, 1.05f, 1.05f);
 
+        // Set the box's material color to translucent white
         Renderer boxRenderer = indicatorBox.GetComponent<Renderer>();
         if (boxRenderer != null)
         {
-            boxRenderer.material.color = new Color(1f, 1f, 1f, 0.5f); // white
+            Color translucentWhite = new Color(1f, 1f, 1f, 0.5f);
+            boxRenderer.material.color = translucentWhite;
         }
 
+        // Disable the box at start
         indicatorBox.SetActive(false);
     }
 
-    // player inputs
-    void HandleInput()
+    // Update is called once per frame
+    void Update()
     {
-        bool isPressingSpace = Input.GetKey(KeyCode.Space);
-        if (Input.GetKeyDown(KeyCode.R)) ResetPlayer();
-        if (Input.GetKeyDown(KeyCode.Space)) HandleSpacePress();
-        if (isPressingSpace) HandleJumpOrFly();
-        if (Input.GetKey(KeyCode.LeftShift) && isFlying) HandleFly("down");
-        else if (isFlying && !isPressingSpace) MyRigidbody.velocity = new Vector3(MyRigidbody.velocity.x, 0, MyRigidbody.velocity.z);
-        movementSpeed = Input.GetKey(KeyCode.LeftControl) ? baseMovementSpeed * 2 : baseMovementSpeed;
+        MovePlayer();
+        Vector3 targetVelocity = Vector3.SmoothDamp(MyRigidbody.velocity, Vector3.zero, ref currentVelocity, 0.2f);
+        MyRigidbody.velocity = new Vector3(targetVelocity.x, MyRigidbody.velocity.y, targetVelocity.z);
+
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            MyRigidbody.velocity = Vector3.zero;
+            transform.position = Vector3.zero;
+        }
+
+        if (Input.GetKey(KeyCode.Space))
+        {
+            if (canFly) HandleFly("up");
+            else HandleJump();
+        }
+
+        if (Input.GetKey(KeyCode.LeftShift))
+        {
+            HandleFly("down");
+        }
+
+        if (Input.GetKey(KeyCode.LeftControl))
+        {
+            movementSpeed = baseMovementSpeed * 2;
+        }
+        else
+        {
+            movementSpeed = baseMovementSpeed;
+        }
+        /*
+        Vector2Int currentChunkPos = GetChunkPosition(transform.position, out Vector3 n);
+        if (!chunkPool.activeChunks.ContainsKey(currentChunkPos))
+        { 
+            MyRigidbody.velocity = Vector3.zero;
+            Debug.LogWarning("out of bounds!");
+        }
+        else if (chunkPool.activeChunks[new Vector2Int(currentChunkPos.x, currentChunkPos.y)].GetComponent<Chunk>().HasMesh())
+        {
+            MyRigidbody.velocity = Vector3.zero;
+            Debug.LogWarning("out of bounds!");
+        }
+        */
+        DetectInteractions();
     }
 
-    // Resets the player's position and velocity
-    void ResetPlayer()
-    {
-        MyRigidbody.velocity = Vector3.zero;
-        transform.position = new Vector3(0, 100, 0);
-    }
-
-    // Handles movement input for the player
     void MovePlayer()
     {
         Vector3 movementDirection = Vector3.zero;
 
-        if (Input.GetKey(KeyCode.W)) movementDirection += MainCamera.transform.forward;
-        if (Input.GetKey(KeyCode.S)) movementDirection -= MainCamera.transform.forward;
-        if (Input.GetKey(KeyCode.A)) movementDirection -= MainCamera.transform.right;
-        if (Input.GetKey(KeyCode.D)) movementDirection += MainCamera.transform.right;
+        if (Input.GetKey(KeyCode.W))
+        {
+            movementDirection += MainCamera.transform.forward;
+        }
 
-        if (movementDirection == Vector3.zero) return;
+        if (Input.GetKey(KeyCode.S))
+        {
+            movementDirection -= MainCamera.transform.forward;
+        }
 
-        movementDirection.y = 0; // Ensure horizontal movement
+        if (Input.GetKey(KeyCode.A))
+        {
+            movementDirection -= MainCamera.transform.right;
+        }
+
+        if (Input.GetKey(KeyCode.D))
+        {
+            movementDirection += MainCamera.transform.right;
+        }
+
+        if (movementDirection == Vector3.zero)
+        {
+            return;
+        }
+
+        movementDirection.y = 0; // Make movement horizontal
         movementDirection.Normalize(); // Maintain consistent speed
 
         MyRigidbody.velocity += movementDirection * movementSpeed;
     }
 
-    // Applies smooth deceleration to horizontal movement
-    void ApplyHorizontalDrag()
-    {
-        Vector3 targetVelocity = Vector3.SmoothDamp(MyRigidbody.velocity, Vector3.zero, ref currentVelocity, 0.2f);
-        MyRigidbody.velocity = new Vector3(targetVelocity.x, MyRigidbody.velocity.y, targetVelocity.z);
-    }
-
-    // Handles interactions with chunk bounds
-    void HandleChunkBounds()
-    {
-        Vector2Int currentChunkPos = GetChunkPosition(transform.position, out _);
-
-        if (ChunkPool.activeChunks.TryGetValue(currentChunkPos, out GameObject chunkObject))
-        {
-            Chunk currentChunk = chunkObject.GetComponent<Chunk>();
-            if (currentChunk.meshFilter == null || currentChunk.meshFilter.sharedMesh == null)
-            {
-                MyRigidbody.velocity = Vector3.zero;
-            }
-        }
-        else
-        {
-            MyRigidbody.velocity = Vector3.zero;
-        }
-    }
-
-    // Handles jump or flying logic based on player state
-    void HandleJumpOrFly()
-    {
-        if (isFlying) HandleFly("up");
-        else HandleJump();
-    }
-
-    // Handles jumping when grounded
     void HandleJump()
     {
         isGrounded = Physics.Raycast(transform.position, Vector3.down, 1.01f, groundLayer);
@@ -133,102 +130,108 @@ public class Player : MonoBehaviour
         }
     }
 
-    // Handles flying logic
     void HandleFly(string direction)
     {
         if (direction == "up")
         {
-            MyRigidbody.velocity = Vector3.up * jumpHeight;
+            MyRigidbody.velocity += Vector3.up * jumpHeight;
         }
         else if (direction == "down")
         {
-            MyRigidbody.velocity = Vector3.down * jumpHeight;
+            MyRigidbody.velocity += Vector3.down * jumpHeight;
         }
     }
 
-    // Handles asynchronous space press detection for flying
-    private async void HandleSpacePress()
-    {
-        if (isWaiting)
-        {
-            isFlying = !isFlying;
-            MyRigidbody.useGravity = !MyRigidbody.useGravity;
-            isWaiting = false;
-        }
-        else
-        {
-            isWaiting = true;
-            await Task.Delay(doublePressDelay);
-            if (isWaiting) isWaiting = false;
-        }
-    }
-
-    // Detects and handles voxel interactions
     void DetectInteractions()
     {
         Ray ray = new Ray(transform.position + (Vector3.up / 2), MainCamera.forward);
         if (Physics.Raycast(ray, out RaycastHit hit, selectDistance, groundLayer))
         {
-            Vector3 hitPointAdjusted = Input.GetMouseButton(1)
-                ? hit.point + hit.normal * 0.5f
-                : hit.point - hit.normal * 0.5f;
+            // Get the hit location and adjust based on hit normal to avoid incorrect rounding
+            Vector3 hitPointAdjusted;
+            if (Input.GetMouseButton(1))
+            {
+                hitPointAdjusted = hit.point + hit.normal * 0.5f;
+            }
+            else
+            {
+                hitPointAdjusted = hit.point + -hit.normal * 0.5f;
+            }
 
+            // Round the hit point adjusted to the nearest integer
             Vector3Int roundedHitPoint = new Vector3Int(
                 Mathf.RoundToInt(hitPointAdjusted.x),
                 Mathf.RoundToInt(hitPointAdjusted.y),
                 Mathf.RoundToInt(hitPointAdjusted.z)
             );
 
+            // Move the indicator box to the adjusted hit location
             indicatorBox.transform.position = roundedHitPoint;
-            if (!indicatorBox.activeSelf) indicatorBox.SetActive(true);
 
-            if (Input.GetMouseButton(0)) Interact(0, roundedHitPoint, hit.normal);
-            else if (Input.GetMouseButton(1)) Interact(1, roundedHitPoint, hit.normal);
+            // Enable the box if it was disabled
+            if (!indicatorBox.activeSelf)
+            {
+                indicatorBox.SetActive(true);
+            }
+
+            if (Input.GetMouseButton(0))
+                Interact(0, roundedHitPoint, hit.normal);
+            else if (Input.GetMouseButton(1))
+                Interact(1, roundedHitPoint, hit.normal);
+            else if (Input.GetMouseButton(2))
+                Interact(2, roundedHitPoint, hit.normal);
         }
-        else if (indicatorBox.activeSelf)
+        else
         {
-            indicatorBox.SetActive(false);
+            // Disable the indicator box if nothing is hit
+            if (indicatorBox.activeSelf)
+            {
+                indicatorBox.SetActive(false);
+            }
         }
     }
 
-    // Handles voxel interactions
     void Interact(int mouseButton, Vector3Int position, Vector3 direction)
     {
         Vector2Int chunkCoords = GetChunkPosition(position, out Vector3 localPosition);
 
-        if (ChunkPool.activeChunks.TryGetValue(chunkCoords, out GameObject hitChunk))
+        // Ensure the position is within chunk bounds before interacting
+        if (chunkPool.activeChunks.TryGetValue(chunkCoords, out GameObject hitChunk))
         {
             Chunk chunkScript = hitChunk.GetComponent<Chunk>();
             Voxel[,,] chunkVoxels = chunkScript.voxels;
 
-            if (localPosition.x < 0 || localPosition.x >= chunkSize ||
-                localPosition.y < 0 || localPosition.y >= chunkSize ||
-                localPosition.z < 0 || localPosition.z >= chunkSize) return;
-
             switch (mouseButton)
             {
-                case 0: // Remove voxel
+                case 0: // Left-click: Remove voxel
+
+                    Voxel voxel = chunkVoxels[(int)localPosition.x, (int)localPosition.y, (int)localPosition.z];
+                    if (voxel == Voxel.Empty) break;
+                    Debug.Log($"Deleted {voxel}");
                     chunkVoxels[(int)localPosition.x, (int)localPosition.y, (int)localPosition.z] = Voxel.Empty;
                     chunkScript.UpdateMeshLocal((int)localPosition.x, (int)localPosition.y, (int)localPosition.z);
                     break;
-
-                case 1: // Place voxel
+                case 1: // Right-click: Place voxel
                     chunkVoxels[(int)localPosition.x, (int)localPosition.y, (int)localPosition.z] = selectedBlock;
                     chunkScript.UpdateMeshLocal((int)localPosition.x, (int)localPosition.y, (int)localPosition.z);
+                    break;
+                default:
                     break;
             }
         }
     }
 
-    // Calculates chunk position and local voxel position
     Vector2Int GetChunkPosition(Vector3 location, out Vector3 localPosition)
     {
+        // Calculate chunk coordinates
         int chunkX = Mathf.FloorToInt(location.x / chunkSize);
         int chunkZ = Mathf.FloorToInt(location.z / chunkSize);
 
+        // Calculate local position within the chunk
         float localX = location.x % chunkSize;
         float localZ = location.z % chunkSize;
 
+        // Ensure the local position is positive
         if (localX < 0) localX += chunkSize;
         if (localZ < 0) localZ += chunkSize;
 

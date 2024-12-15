@@ -1,54 +1,76 @@
 using System.Collections;
 using System.Collections.Generic;
 using Voxels;
-using Unity.Collections;
-using Unity.Burst;
 using UnityEngine;
 
 public static class ChunkUtils
 {
-    [BurstCompile]
-    public static bool ShouldAddFace(
-    NativeArray<byte> voxels,  // Current chunk voxel data
-    int x,
-    int y,
-    int z,
-    Vector3Int direction,
-    NativeArray<byte> neighborChunkVoxels  // Neighbor chunk data
-    )
+    public static bool ShouldAddFace(Chunk chunk, int x, int y, int z, Vector3 direction)
     {
-        // Calculate the neighbor coordinates
-        int newX = x + direction.x;
-        int newY = y + direction.y;
-        int newZ = z + direction.z;
+        if (chunk == null)
+        {
+            //Debug.LogWarning("chunk is null");
+            return false;
+        }
 
-        // Check Y bounds (vertical limits)
-        if (newY >= 255) return true;  // Face at the top
-        if (newY < 0) return false;            // Face at the bottom
+        Voxel voxel = chunk.voxels[x, y, z];
+        if (voxel == null)
+        {
+            //Debug.LogWarning("voxel is null");
+            return false;
+        }
+        if (voxel == Voxel.Empty) return true;
 
-        // Check if the neighbor is out of bounds in X/Z
-        bool isOutOfBounds = newX < 0 || newX >= 16 || newZ < 0 || newZ >= 16;
+        int newX = x + (int)direction.x;
+        int newY = y + (int)direction.y;
+        int newZ = z + (int)direction.z;
+
+        const int MaxHeight = 255;
+        const int ChunkSize = 16;
+
+        if (newY >= MaxHeight) return true;
+        if (newY < 0) return false;
+
+        bool isOutOfBounds = newX < 0 || newX >= ChunkSize || newZ < 0 || newZ >= ChunkSize;
 
         if (isOutOfBounds)
         {
-            // Adjust to neighbor chunk coordinates
-            int neighborX = (newX + 16) % 16;
-            int neighborZ = (newZ + 16) % 16;
+            Vector2Int targetChunkCoord = new Vector2Int(chunk.x + (int)direction.x, chunk.y + (int)direction.z);
 
-            // Compute the index for the neighboring voxel
-            int neighborIndex = neighborX + neighborZ * 16 + newY * 255 * 16;
+            if (chunk.chunkPool.activeChunks.TryGetValue(targetChunkCoord, out GameObject nextChunk))
+            {
+                newX = (newX + ChunkSize) % ChunkSize;
+                newZ = (newZ + ChunkSize) % ChunkSize;
+                Voxel[,,] nextChunkVoxels = nextChunk.GetComponent<Chunk>().voxels;
 
-            // Check if the neighbor voxel is empty
-            return neighborChunkVoxels[neighborIndex] == (byte)0;
+                if (nextChunkVoxels == null)
+                {
+                    //Debug.LogWarning("Next chunk voxels are null");
+                    return false;
+                }
+
+                Voxel nextChunkVoxel = nextChunkVoxels[newX, newY, newZ];
+                if (nextChunkVoxel == null)
+                {
+                    //Debug.LogWarning("Voxel in the neighboring chunk is null");
+                    return false;
+                }
+                if (nextChunkVoxel is SolidVoxel && voxel is SolidVoxel) return false;
+
+                return true;
+            }
+            return false;
         }
-        else
+
+        Voxel neighborVoxel = chunk.voxels[newX, newY, newZ];
+        if (neighborVoxel == null)
         {
-            // Compute the index for the local voxel
-            int localIndex = newX + newZ * 16 + newY * 255 * 16;
-
-            // Check if the neighbor voxel is empty
-            return voxels[localIndex] == (byte)0;
+            Debug.Log("Other voxel is null");
+            return false;
         }
+        if (neighborVoxel is SolidVoxel && voxel is SolidVoxel) return false;
+
+        return true;
     }
 
     public static bool CheckNextVoxel(Chunk chunk, int x, int y, int z, Vector3 direction, out Voxel nextVoxel, out Vector3Int nextPosition, out Vector2Int nextChunkPos)
@@ -76,7 +98,7 @@ public static class ChunkUtils
         if (isOutOfBounds)
         {
             GameObject nextChunk;
-            if (ChunkPool.activeChunks.TryGetValue(new Vector2Int(chunk.x + (int)direction.x, chunk.y + (int)direction.z), out nextChunk))
+            if (chunk.chunkPool.activeChunks.TryGetValue(new Vector2Int(chunk.x + (int)direction.x, chunk.y + (int)direction.z), out nextChunk))
             {
                 Chunk nextChunkScript = nextChunk.GetComponent<Chunk>();
 

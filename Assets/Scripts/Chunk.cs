@@ -1,209 +1,260 @@
-using System.Collections.Generic;
 using System.Collections;
-using UnityEngine;
-using Unity.Jobs;
-using Unity.Burst;
-using Unity.Collections;
-using UnityEngine.Rendering;
+using System.Collections.Generic;
+using System.IO;
 using Voxels;
+using UnityEngine;
 
 public class Chunk : MonoBehaviour
 {
     public Voxel[,,] voxels = null;
     public TerrainGenerator terrainGenerator;
+    public ChunkPool chunkPool;
 
-    public static Material[,] materials; // Stores materials in a 2D array
+    public Material[,] materials;
 
     public int x;
     public int y;
     public bool isDirty;
 
-    public MeshFilter meshFilter;
-    public MeshCollider meshCollider;
-    public MeshRenderer meshRenderer;
+    private MeshFilter meshFilter;
+    private MeshCollider meshCollider;
+    private MeshRenderer meshRenderer;
 
-    private static readonly Vector3Int[] directions = {
-        Vector3Int.back, Vector3Int.right, Vector3Int.forward, Vector3Int.left, Vector3Int.up, Vector3Int.down
-    };
-
-    private static readonly Vector3[] faceVertices = {
-        new Vector3(0.5f, 0.5f, -0.5f), new Vector3(-0.5f, 0.5f, -0.5f), new Vector3(0.5f, -0.5f, -0.5f), new Vector3(-0.5f, -0.5f, -0.5f),
-        new Vector3(0.5f, 0.5f, 0.5f), new Vector3(0.5f, 0.5f, -0.5f), new Vector3(0.5f, -0.5f, 0.5f), new Vector3(0.5f, -0.5f, -0.5f),
-        new Vector3(-0.5f, 0.5f, 0.5f), new Vector3(0.5f, 0.5f, 0.5f), new Vector3(-0.5f, -0.5f, 0.5f), new Vector3(0.5f, -0.5f, 0.5f),
-        new Vector3(-0.5f, 0.5f, -0.5f), new Vector3(-0.5f, 0.5f, 0.5f), new Vector3(-0.5f, -0.5f, -0.5f), new Vector3(-0.5f, -0.5f, 0.5f),
-        new Vector3(-0.5f, 0.5f, -0.5f), new Vector3(0.5f, 0.5f, -0.5f), new Vector3(-0.5f, 0.5f, 0.5f), new Vector3(0.5f, 0.5f, 0.5f),
-        new Vector3(-0.5f, -0.5f, 0.5f), new Vector3(0.5f, -0.5f, 0.5f), new Vector3(-0.5f, -0.5f, -0.5f), new Vector3(0.5f, -0.5f, -0.5f)
-    };
-
-    private static readonly Vector2[] faceUVs = {
-        new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, 0), new Vector2(1, 0)
-    };
-
-    private Coroutine currentMeshJob;
-
-    void Awake()
+    void Start()
     {
         meshFilter = GetComponent<MeshFilter>();
         meshCollider = GetComponent<MeshCollider>();
         meshRenderer = GetComponent<MeshRenderer>();
+        materials = TextureManager.materials;
     }
 
     void OnEnable()
     {
         transform.position = new Vector3(x * 16, 0, y * 16);
-        voxels ??= terrainGenerator.GenerateTerrain(x, y);
+
+        if (voxels == null)
+        {
+            voxels = terrainGenerator.GenerateTerrain(x, y);
+        }
+
         CreateMesh();
     }
 
-    void OnDisable()
+    public void CreateMesh()
     {
-        if (currentMeshJob != null)
-        {
-            StopCoroutine(currentMeshJob);
-            currentMeshJob = null;
-        }
+        isDirty = true;
     }
-
-    public void CreateMesh() => isDirty = true;
-
-    public void UpdateMeshLocal(int x, int y, int z) => CreateMesh();
 
     void Update()
     {
         if (isDirty)
         {
-            if (currentMeshJob != null)
-            {
-                StopCoroutine(currentMeshJob);
-            }
-            currentMeshJob = StartCoroutine(GenerateMeshDataOverTime());
+            StartCoroutine(GenerateMeshDataOverTime());
             isDirty = false;
         }
     }
 
     IEnumerator GenerateMeshDataOverTime()
     {
-        NativeArray<byte> textureIDs = FlattenArray(voxels);
-        NativeArray<Vector3Int> directionsArray = new NativeArray<Vector3Int>(directions, Allocator.Persistent);
-        NativeArray<Vector3> faceVerticesArray = new NativeArray<Vector3>(faceVertices, Allocator.Persistent);
-        NativeArray<Vector2> faceUVsArray = new NativeArray<Vector2>(faceUVs, Allocator.Persistent);
-
-        MeshGenerationJob meshGenerationJob = new MeshGenerationJob
-        {
-            textureIDs = textureIDs,
-            directions = directionsArray,
-            faceVertices = faceVerticesArray,
-            faceUVs = faceUVsArray,
-            vertices = new NativeList<Vector3>(Allocator.Persistent),
-            triangles = new NativeList<int>(Allocator.Persistent),
-            uvs = new NativeList<Vector2>(Allocator.Persistent),
-            chunkSize = 16,
-            chunkHeight = 255
-        };
-
-        JobHandle jobHandle = meshGenerationJob.Schedule();
-        jobHandle.Complete();
-
+        meshFilter.sharedMesh = null;
         Mesh mesh = new Mesh();
-        try
+        List<Vector3> vertices = new List<Vector3>();
+        List<Vector2> uvs = new List<Vector2>();
+
+        // Dictionary to store triangle lists for each texture on each face
+        Dictionary<(int, int), List<int>> textureToTriangles = new Dictionary<(int, int), List<int>>();
+        List<Material> meshMaterials = new List<Material>();
+
+        // Initialize the triangle list for each texture and face direction
+        for (int id = 0; id < this.materials.GetLength(0); id++)
         {
-            mesh.SetVertices(meshGenerationJob.vertices.ToArray(Allocator.TempJob));
-            mesh.SetTriangles(meshGenerationJob.triangles.ToArray(), 0);
-            mesh.SetUVs(0, meshGenerationJob.uvs.AsArray());
-
-            if (meshFilter.mesh != null) Destroy(meshFilter.mesh);
-            if (meshCollider.sharedMesh != null) Destroy(meshCollider.sharedMesh);
-
-            meshFilter.mesh = mesh;
-            meshCollider.sharedMesh = mesh;
-        }
-        finally
-        {
-            textureIDs.Dispose();
-            directionsArray.Dispose();
-            faceVerticesArray.Dispose();
-            faceUVsArray.Dispose();
-
-            meshGenerationJob.vertices.Dispose();
-            meshGenerationJob.triangles.Dispose();
-            meshGenerationJob.uvs.Dispose();
-        }
-
-        yield return null;
-    }
-
-    public NativeArray<byte> FlattenArray(Voxel[,,] voxelArray)
-    {
-        const int width = 16, height = 255, depth = 16;
-        NativeArray<byte> nativeArray = new NativeArray<byte>(width * height * depth, Allocator.TempJob);
-
-        int index = 0;
-        for (int x = 0; x < width; x++)
-        {
-            for (int y = 0; y < height; y++)
+            for (int direction = 0; direction < 6; direction++) // 6 faces per voxel
             {
-                for (int z = 0; z < depth; z++)
-                {
-                    nativeArray[index++] = voxelArray[x, y, z].TextureID;
-                }
+                textureToTriangles[(id, direction)] = new List<int>();
             }
         }
-        return nativeArray;
-    }
 
-    public void LoadData(string path) => SaveSystem.LoadChunk(path, ref x, ref y, ref voxels);
-}
-
-[BurstCompile]
-public struct MeshGenerationJob : IJob
-{
-    [ReadOnly] public NativeArray<byte> textureIDs;
-    [ReadOnly] public NativeArray<Vector3Int> directions;
-    [ReadOnly] public NativeArray<Vector3> faceVertices;
-    [ReadOnly] public NativeArray<Vector2> faceUVs;
-
-    public NativeList<Vector3> vertices;
-    public NativeList<int> triangles;
-    public NativeList<Vector2> uvs;
-
-    public int chunkSize;
-    public int chunkHeight;
-
-    public void Execute()
-    {
-        NativeArray<int> addTriangles = new NativeArray<int>(6, Allocator.TempJob);
-        for (int x = 0; x < chunkSize; x++)
+        for (int x = 0; x < 16; x++)
         {
-            for (int y = 0; y < chunkHeight; y++)
+            for (int y = 0; y < 255; y++)
             {
-                for (int z = 0; z < chunkSize; z++)
+                for (int z = 0; z < 16; z++)
                 {
-                    int index = x + y * chunkSize + z * chunkSize * chunkHeight;
-                    byte textureID = textureIDs[index];
+                    Voxel voxel = voxels[x, y, z];
+                    if (voxel is AirVoxel) continue; // Skip empty voxel
+                    // Assign faces to corresponding texture groups
 
-                    if (textureID == 0) continue;
-
-                    for (int i = 0; i < 6; i++)
+                    for (int i = 0; i < 6; i++) // Loop through each face direction
                     {
-                        int startIndex = vertices.Length;
-
-                        for (int j = 0; j < 4; j++)
-                        {
-                            vertices.Add(new Vector3(x, y, z) + faceVertices[i * 4 + j]);
-                        }
-
-                        uvs.AddRange(faceUVs);
-                        addTriangles[0] = startIndex;
-                        addTriangles[1] = startIndex + 2;
-                        addTriangles[2] = startIndex + 1;
-                        addTriangles[3] = startIndex + 1;
-                        addTriangles[4] = startIndex + 2;
-                        addTriangles[5] = startIndex + 3;
-                        triangles.AddRange(addTriangles);
+                        Vector3 direction = DirectionFromIndex(i);
+                        AddFaceIfNeeded(vertices, textureToTriangles[(voxel.TextureID, i)], uvs, new Vector3(x, y, z), direction);
                     }
                 }
+                if (y % 2 == 0) yield return null;
             }
         }
-        addTriangles.Dispose();
+
+        // Finalize the mesh data
+        mesh.vertices = vertices.ToArray();
+        mesh.uv = uvs.ToArray();
+        mesh.subMeshCount = textureToTriangles.Count;
+
+        // Assign triangles for each face texture
+        int submeshIndex = 0;
+        foreach (var triangles in textureToTriangles.Values)
+        {
+            mesh.SetTriangles(triangles, submeshIndex++);
+        }
+
+        // Finalize the mesh
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+
+        // Assign the mesh to the mesh filter and collider
+        meshFilter.mesh = mesh;
+        meshCollider.sharedMesh = mesh;
+
+        // Assign materials based on the face textures
+        for (int type = 0; type < materials.GetLength(0); type++)
+        {
+            for (int direction = 0; direction < 6; direction++) // 6 faces per voxel
+            {
+                meshMaterials.Add(materials[type, direction]);
+            }
+        }
+        // Apply the materials to the mesh renderer
+        meshRenderer.materials = meshMaterials.ToArray();
+    }
+
+    public void UpdateMeshLocal(int voxelX, int voxelY, int voxelZ)
+    {
+        isDirty = true; // Add local mesh logic later
+    }
+
+    public void LoadData(string filePath)
+    {
+        SaveSystem.LoadChunk(filePath, ref x, ref y, ref voxels);
+
+        // Once data is loaded, mark the mesh as dirty
+        CreateMesh();
+    }
+
+    void AddFaceIfNeeded(List<Vector3> vertices, List<int> triangles, List<Vector2> uvs, Vector3 position, Vector3 direction)
+    {
+        if (ChunkUtils.ShouldAddFace(this, (int)position.x, (int)position.y, (int)position.z, direction))
+        {
+            AddFace(vertices, triangles, uvs, position, direction);
+        }
+    }
+    
+    void AddFace(List<Vector3> vertices, List<int> triangles, List<Vector2> uvs, Vector3 position, Vector3 direction)
+    {
+        Vector3[] faceVertices;
+        Vector2[] faceUVs;
+
+        // Define face vertices depending on the direction
+        if (direction == Vector3.up)
+        {
+            faceVertices = new Vector3[]
+            {
+            new Vector3(-0.5f, 0.5f, -0.5f),
+            new Vector3(0.5f, 0.5f, -0.5f),
+            new Vector3(-0.5f, 0.5f, 0.5f),
+            new Vector3(0.5f, 0.5f, 0.5f)
+            };
+        }
+        else if (direction == Vector3.down)
+        {
+            faceVertices = new Vector3[]
+            {
+            new Vector3(-0.5f, -0.5f, 0.5f),
+            new Vector3(0.5f, -0.5f, 0.5f),
+            new Vector3(-0.5f, -0.5f, -0.5f),
+            new Vector3(0.5f, -0.5f, -0.5f)
+            };
+        }
+        else if (direction == Vector3.right)
+        {
+            faceVertices = new Vector3[]
+            {
+            new Vector3(0.5f, 0.5f, 0.5f),
+            new Vector3(0.5f, 0.5f, -0.5f),
+            new Vector3(0.5f, -0.5f, 0.5f),
+            new Vector3(0.5f, -0.5f, -0.5f)
+            };
+        }
+        else if (direction == Vector3.left)
+        {
+            faceVertices = new Vector3[]
+            {
+            new Vector3(-0.5f, 0.5f, -0.5f),
+            new Vector3(-0.5f, 0.5f, 0.5f),
+            new Vector3(-0.5f, -0.5f, -0.5f),
+            new Vector3(-0.5f, -0.5f, 0.5f)
+            };
+        }
+        else if (direction == Vector3.forward)
+        {
+            faceVertices = new Vector3[]
+            {
+            new Vector3(-0.5f, 0.5f, 0.5f),
+            new Vector3(0.5f, 0.5f, 0.5f),
+            new Vector3(-0.5f, -0.5f, 0.5f),
+            new Vector3(0.5f, -0.5f, 0.5f)
+            };
+        }
+        else // Vector3.back
+        {
+            faceVertices = new Vector3[]
+            {
+            new Vector3(0.5f, 0.5f, -0.5f),
+            new Vector3(-0.5f, 0.5f, -0.5f),
+            new Vector3(0.5f, -0.5f, -0.5f),
+            new Vector3(-0.5f, -0.5f, -0.5f)
+            };
+        }
+
+        faceUVs = new Vector2[]
+        {
+        new Vector2(0, 1),
+        new Vector2(1, 1),
+        new Vector2(0, 0),
+        new Vector2(1, 0)
+        };
+
+        int vertexCount = vertices.Count;
+
+        for (int i = 0; i < 4; i++)
+        {
+            vertices.Add(position + faceVertices[i]);
+            uvs.Add(faceUVs[i]);
+        }
+
+        triangles.Add(vertexCount);
+        triangles.Add(vertexCount + 2);
+        triangles.Add(vertexCount + 1);
+        triangles.Add(vertexCount + 1);
+        triangles.Add(vertexCount + 2);
+        triangles.Add(vertexCount + 3);
+    }
+
+    Vector3 DirectionFromIndex(int index)
+    {
+        Vector3[] indexToDirection = new Vector3[]
+        {
+            Vector3.back,
+            Vector3.right,
+            Vector3.forward,
+            Vector3.left,
+            Vector3.up,
+            Vector3.down
+        };
+
+        return indexToDirection[index];
+    }
+
+    public bool HasMesh()
+    {
+        return meshFilter != null;
     }
 }

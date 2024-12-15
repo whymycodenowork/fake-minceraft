@@ -8,11 +8,11 @@ public class ChunkPool : MonoBehaviour
     public GameObject chunkPrefab;
     public Transform player;
     public int viewDistance = 64;
-    public static int saveFile = 1;
+    public int saveFile = 1;
     private const int chunkSize = 16;
 
-    public static Dictionary<Vector2Int, GameObject> activeChunks = new Dictionary<Vector2Int, GameObject>();
-    private static Queue<GameObject> chunkPool = new Queue<GameObject>();
+    public Dictionary<Vector2Int, GameObject> activeChunks = new Dictionary<Vector2Int, GameObject>();
+    private Queue<GameObject> chunkPool = new Queue<GameObject>();
 
     async void Update()
     {

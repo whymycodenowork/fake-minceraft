@@ -44,13 +44,17 @@ MonoBehaviour:
   m_GameObject: {fileID: 9059245294083506208}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dcda36898c2de674a9e481ed9f2e18a3, type: 3}
+  m_Script: {fileID: 11500000, guid: 9bf8831e5c7a5204c9bcf1983ca2541b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  width: 16
-  height: 256
-  depth: 16
-  voxelSize: 1
+  terrainGenerator: {fileID: 0}
+  chunkPool: {fileID: 0}
+  x: 0
+  y: 0
+  isDirty: 0
+  meshFilter: {fileID: 0}
+  meshCollider: {fileID: 0}
+  meshRenderer: {fileID: 0}
 --- !u!33 &1850206645233367375
 MeshFilter:
   m_ObjectHideFlags: 0
