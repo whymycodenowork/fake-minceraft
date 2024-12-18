@@ -6,11 +6,13 @@ using UnityEngine;
 public class TerrainGenerator : MonoBehaviour
 {
     public int heightOffset;
-    public float heightMultiplier;
+    public Vector2 offset;
     public float zoom;
-    public static int heightOffset2;
-    public static float heightMultiplier2;
-    public static float zoom2;
+
+    public int heightOffset2;
+    public Vector2 offset2;
+    public float zoom2;
+    public float heightMultiplier;
 
     private const int width = 16;
     private const int height = 255;
@@ -24,9 +26,9 @@ public class TerrainGenerator : MonoBehaviour
         {
             for (int z = 0; z < length; z++)
             {
-                float noiseValue = Mathf.PerlinNoise((offsetX * width + x) * zoom, (offsetY * length + z) * zoom);
-                //noiseValue *= Mathf.PerlinNoise((offsetX * width + x) * zoom2, (offsetY * depth + z) * zoom2);
-                //noiseValue *= Mathf.PerlinNoise((offsetX * width + x) * 0.001f, (offsetY * depth + z) * 0.001f);
+                float noiseValue = Mathf.PerlinNoise((offsetX * width + x + offset.x) * zoom, (offsetY * length + z + offset.y) * zoom);
+                noiseValue *= Mathf.PerlinNoise((offsetX * width + x + offset2.x) * zoom2, (offsetY * length + z + offset2.y) * zoom2);
+                noiseValue *= Mathf.PerlinNoise((offsetX * width + x) * 0.001f, (offsetY * length + z) * 0.0001f);
 
                 // Scale the noiseValue to fit within the height range
                 int heightAtPoint = Mathf.RoundToInt((noiseValue * heightMultiplier) + heightOffset);

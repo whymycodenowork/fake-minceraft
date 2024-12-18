@@ -86,8 +86,8 @@ public class ChunkPool : MonoBehaviour
     void UnloadChunk(Vector2Int coord)
     {
         GameObject chunk = activeChunks[coord];
-        string filePath = $"Assets/SaveData/SaveFile{saveFile}/chunk_{coord.x}_{coord.y}.dat";
-        SaveSystem.SaveChunk(filePath, coord.x, coord.y, chunk.GetComponent<Chunk>().voxels);
+        //string filePath = $"Assets/SaveData/SaveFile{saveFile}/chunk_{coord.x}_{coord.y}.dat";
+        //SaveSystem.SaveChunk(filePath, coord.x, coord.y, chunk.GetComponent<Chunk>().voxels);
         chunk.SetActive(false);
         chunkPool.Enqueue(chunk);
         activeChunks.Remove(coord);

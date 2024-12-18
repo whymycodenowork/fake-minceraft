@@ -37,7 +37,5 @@ public static class TextureManager
                 }
             }
         }
-
-        Debug.Log("Materials initialized.");
     }
 }

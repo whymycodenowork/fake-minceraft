@@ -26,18 +26,18 @@ public class PlayerLook : MonoBehaviour
             if (Cursor.lockState != CursorLockMode.Locked)
                 Cursor.lockState = CursorLockMode.Locked;
 
-            // Capture mouse input for rotation
+            // Capture mouse input
             float mouseX = Input.GetAxis("Mouse X");
             float mouseY = Input.GetAxis("Mouse Y");
-            // Clamp vertical rotation (pitch)
-            turn.x -= mouseY * sensitivity; // Invert Y-axis for typical FPS feel
+
+            turn.x += mouseY * sensitivity;
             turn.x = Mathf.Clamp(turn.x, -90, 90); // Prevent excessive tilt
 
-            // Apply vertical rotation (local pitch)
-            transform.localEulerAngles = new Vector3(turn.x, transform.localEulerAngles.y, 0);
+            // Apply vertical rotation to the head
+            transform.localEulerAngles = new Vector3(0, 0, turn.x);
 
-            // Apply horizontal rotation (yaw)
-            transform.Rotate(Vector3.up * mouseX * sensitivity, Space.World); // Rotate around global Y-axis
+            // Apply horizontal rotation to the parent
+            transform.parent.Rotate(Vector3.up * mouseX * sensitivity, Space.World); // Rotate parent
         }
         else
         {
