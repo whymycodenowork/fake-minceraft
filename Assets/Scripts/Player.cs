@@ -41,12 +41,12 @@ public class Player : MonoBehaviour
     void Update()
     {
         MovePlayer();
-        Vector3 targetVelocity = Vector3.SmoothDamp(MyRigidbody.velocity, Vector3.zero, ref currentVelocity, 0.2f);
-        MyRigidbody.velocity = new Vector3(targetVelocity.x, MyRigidbody.velocity.y, targetVelocity.z);
+        Vector3 targetVelocity = Vector3.SmoothDamp(MyRigidbody.linearVelocity, Vector3.zero, ref currentVelocity, 0.2f);
+        MyRigidbody.linearVelocity = new Vector3(targetVelocity.x, MyRigidbody.linearVelocity.y, targetVelocity.z);
 
         if (Input.GetKeyDown(KeyCode.R))
         {
-            MyRigidbody.velocity = Vector3.zero;
+            MyRigidbody.linearVelocity = Vector3.zero;
             transform.position = Vector3.zero;
         }
 
@@ -117,7 +117,7 @@ public class Player : MonoBehaviour
         movementDirection.y = 0; // Make movement horizontal
         movementDirection.Normalize(); // Maintain consistent speed
 
-        MyRigidbody.velocity += movementDirection * movementSpeed;
+        MyRigidbody.linearVelocity += movementDirection * movementSpeed;
     }
 
     void HandleJump()
@@ -125,8 +125,8 @@ public class Player : MonoBehaviour
         isGrounded = Physics.Raycast(transform.position, Vector3.down, 1.01f, groundLayer);
         if (isGrounded)
         {
-            Vector3 velocity = MyRigidbody.velocity;
-            MyRigidbody.velocity = new Vector3(velocity.x, jumpHeight, velocity.z);
+            Vector3 velocity = MyRigidbody.linearVelocity;
+            MyRigidbody.linearVelocity = new Vector3(velocity.x, jumpHeight, velocity.z);
         }
     }
 
@@ -134,11 +134,11 @@ public class Player : MonoBehaviour
     {
         if (direction == "up")
         {
-            MyRigidbody.velocity += Vector3.up * jumpHeight;
+            MyRigidbody.linearVelocity += Vector3.up * jumpHeight;
         }
         else if (direction == "down")
         {
-            MyRigidbody.velocity += Vector3.down * jumpHeight;
+            MyRigidbody.linearVelocity += Vector3.down * jumpHeight;
         }
     }
 
