@@ -1,7 +1,10 @@
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Threading.Tasks;
+using Voxels;
 using UnityEngine;
+using System;
 
 public class ChunkPool : MonoBehaviour
 {
@@ -9,10 +12,11 @@ public class ChunkPool : MonoBehaviour
     public Transform player;
     public int viewDistance = 64;
     public int saveFile = 1;
-    private const int chunkSize = 16;
+    private readonly static int chunkSize = 16;
 
     public Dictionary<Vector2Int, GameObject> activeChunks = new Dictionary<Vector2Int, GameObject>();
-    private Queue<GameObject> chunkPool = new Queue<GameObject>();
+    private Dictionary<Vector2Int, bool> savingChunks = new Dictionary<Vector2Int, bool>();
+    private readonly Queue<GameObject> chunkPool = new Queue<GameObject>();
 
     async void Update()
     {
@@ -87,7 +91,8 @@ public class ChunkPool : MonoBehaviour
     {
         GameObject chunk = activeChunks[coord];
         string filePath = $"Assets/SaveData/SaveFile{saveFile}/chunk_{coord.x}_{coord.y}.dat";
-        SaveSystem.SaveChunk(filePath, coord.x, coord.y, chunk.GetComponent<Chunk>().voxels);
+        Voxel[,,] chunkVoxels = chunk.GetComponent<Chunk>().voxels;
+        SaveChunk(filePath, coord, chunkVoxels);
         chunk.SetActive(false);
         chunkPool.Enqueue(chunk);
         activeChunks.Remove(coord);
@@ -108,5 +113,19 @@ public class ChunkPool : MonoBehaviour
         {
             UnloadChunk(chunkCoord);
         }
+    }
+    async void SaveChunk(string filePath, Vector2Int coord, Voxel[,,] chunkVoxels)
+    {
+        if (!savingChunks.ContainsKey(coord))
+        {
+            return;
+        }
+        if (savingChunks[coord])
+        {
+            return;
+        }
+        savingChunks[coord] = true;
+        await Task.Run(() => SaveSystem.SaveChunk(filePath, coord.x, coord.y, chunkVoxels));
+        savingChunks[coord] = false;
     }
 }
