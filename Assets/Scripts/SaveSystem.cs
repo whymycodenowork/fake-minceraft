@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using Voxels;
 using UnityEngine;
+using Voxels;
 
 public static class SaveSystem
 {
     private static List<Type> voxelTypes = new List<Type>();
+
+    // Static constructor to initialize the voxel types
     static SaveSystem()
     {
         CacheVoxelTypes();
