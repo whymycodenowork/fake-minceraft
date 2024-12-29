@@ -208,7 +208,7 @@ public class Player : MonoBehaviour
 
                     Voxel voxel = chunkVoxels[(int)localPosition.x, (int)localPosition.y, (int)localPosition.z];
                     if (voxel == Voxel.Empty) break;
-                    Debug.Log($"Deleted {voxel}");
+                    // Debug.Log($"Deleted {voxel}");
                     chunkVoxels[(int)localPosition.x, (int)localPosition.y, (int)localPosition.z] = Voxel.Empty;
                     chunkScript.UpdateMeshLocal((int)localPosition.x, (int)localPosition.y, (int)localPosition.z);
                     break;

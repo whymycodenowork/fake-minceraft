@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Voxels;
 using UnityEngine;
 using System;
+using System.Collections.Concurrent;
 
 public class ChunkPool : MonoBehaviour
 {
@@ -15,7 +16,7 @@ public class ChunkPool : MonoBehaviour
     private readonly static int chunkSize = 16;
 
     public Dictionary<Vector2Int, GameObject> activeChunks = new Dictionary<Vector2Int, GameObject>();
-    private Dictionary<Vector2Int, bool> savingChunks = new Dictionary<Vector2Int, bool>();
+    private ConcurrentDictionary<Vector2Int, bool> savingChunks = new ConcurrentDictionary<Vector2Int, bool>();
     private readonly Queue<GameObject> chunkPool = new Queue<GameObject>();
 
     async void Update()
@@ -91,7 +92,7 @@ public class ChunkPool : MonoBehaviour
     {
         GameObject chunk = activeChunks[coord];
         string filePath = $"Assets/SaveData/SaveFile{saveFile}/chunk_{coord.x}_{coord.y}.dat";
-        Voxel[,,] chunkVoxels = chunk.GetComponent<Chunk>().voxels;
+        IVoxel[,,] chunkVoxels = chunk.GetComponent<Chunk>().voxels;
         SaveChunk(filePath, coord, chunkVoxels);
         chunk.SetActive(false);
         chunkPool.Enqueue(chunk);
@@ -114,18 +115,23 @@ public class ChunkPool : MonoBehaviour
             UnloadChunk(chunkCoord);
         }
     }
-    async void SaveChunk(string filePath, Vector2Int coord, Voxel[,,] chunkVoxels)
+
+    async void SaveChunk(string filePath, Vector2Int coord, IVoxel[,,] chunkVoxels)
     {
-        if (!savingChunks.ContainsKey(coord))
+        try
         {
-            return;
+            if (savingChunks.ContainsKey(coord) && savingChunks[coord]) return;
+
+            savingChunks[coord] = true;
+            await Task.Run(() => SaveSystem.SaveChunk(coord, chunkVoxels));
         }
-        if (savingChunks[coord])
+        catch (Exception ex)
         {
-            return;
+            Debug.LogError($"Error saving chunk at {coord}: {ex.Message}");
         }
-        savingChunks[coord] = true;
-        await Task.Run(() => SaveSystem.SaveChunk(filePath, coord.x, coord.y, chunkVoxels));
-        savingChunks[coord] = false;
+        finally
+        {
+            savingChunks[coord] = false;
+        }
     }
 }

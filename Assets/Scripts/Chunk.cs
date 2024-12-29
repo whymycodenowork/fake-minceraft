@@ -7,7 +7,7 @@ using UnityEditorInternal;
 
 public class Chunk : MonoBehaviour
 {
-    public Voxel[,,] voxels = null;
+    public IVoxel[,,] voxels = null;
     public TerrainGenerator terrainGenerator;
     public ChunkPool chunkPool;
 
@@ -80,7 +80,7 @@ public class Chunk : MonoBehaviour
             {
                 for (int z = 0; z < 16; z++)
                 {
-                    Voxel voxel = voxels[x, y, z];
+                    IVoxel voxel = voxels[x, y, z];
                     if (voxel is AirVoxel) continue; // Skip empty voxel
                     // Assign faces to corresponding texture groups
 
@@ -134,7 +134,7 @@ public class Chunk : MonoBehaviour
 
     public void LoadData(string filePath)
     {
-        SaveSystem.LoadChunk(filePath, ref x, ref y, ref voxels);
+        SaveSystem.LoadChunkFromDisk(filePath, ref x, ref y, ref voxels);
 
         // Once data is loaded, mark the mesh as dirty
         CreateMesh();

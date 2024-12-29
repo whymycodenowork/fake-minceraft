@@ -150,7 +150,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   chunkPrefab: {fileID: 1150254291}
   player: {fileID: 1393407524}
-  viewDistance: 10
+  viewDistance: 1
   saveFile: 1
 --- !u!4 &52430374
 Transform:
@@ -4210,7 +4210,6 @@ MonoBehaviour:
   offset2: {x: -6788, y: 3567}
   zoom2: 0.01
   heightMultiplier: 100
-  zoom: 0.01
 --- !u!1 &1572021991
 GameObject:
   m_ObjectHideFlags: 0
@@ -4975,37 +4974,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1797325223}
   m_CullTransparentMesh: 1
---- !u!1 &1811949687
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1811949688}
-  m_Layer: 0
-  m_Name: Save System
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1811949688
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1811949687}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1814492349
 GameObject:
   m_ObjectHideFlags: 0
@@ -5797,14 +5765,12 @@ SceneRoots:
   m_Roots:
   - {fileID: 1393407524}
   - {fileID: 705507995}
-  - {fileID: 1393407524}
   - {fileID: 8276644184743392903}
   - {fileID: 1564931706}
   - {fileID: 52430374}
   - {fileID: 380199902}
   - {fileID: 1363438476}
   - {fileID: 810631522}
-  - {fileID: 1811949688}
   - {fileID: 307169866}
   - {fileID: 369098430}
   - {fileID: 2009666714}

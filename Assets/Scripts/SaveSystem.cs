@@ -20,11 +20,11 @@ public static class SaveSystem
     {
         voxelTypes = Assembly.GetExecutingAssembly()
             .GetTypes()
-            .Where(t => typeof(Voxel).IsAssignableFrom(t) && !t.IsAbstract)
+            .Where(t => typeof(IVoxel).IsAssignableFrom(t) && !t.IsAbstract)
             .ToList();
     }
 
-    public static void SaveChunk(string path, int x, int y, Voxel[,,] voxels)
+    public static void SaveChunkToDisk(string path, int x, int y, IVoxel[,,] voxels)
     {
         if (voxels == null)
         {
@@ -47,13 +47,13 @@ public static class SaveSystem
                     {
                         for (int k = 0; k < 16; k++)
                         {
-                            Voxel voxel = voxels[i, j, k];
+                            IVoxel voxel = voxels[i, j, k];
 
                             // Save type name
                             writer.Write(voxel.GetType().AssemblyQualifiedName);
 
                             // Save voxel data
-                            if (voxel is InteractableVoxel interactableVoxel)
+                            if (voxel is  IInteractableVoxel interactableVoxel)
                             {
                                 interactableVoxel.SaveToData(writer);
                             }
@@ -64,16 +64,17 @@ public static class SaveSystem
         }
     }
 
-    public static void LoadChunk(string path, ref int x, ref int y, ref Voxel[,,] voxels)
+    public static void LoadChunkFromDisk(string path, ref int x, ref int y, ref IVoxel[,,] voxels)
     {
-        using (BinaryReader reader = new BinaryReader(File.Open(path, FileMode.Open)))
+        using (FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.Asynchronous))
+        using (BinaryReader reader = new BinaryReader(stream))
         {
             // Read x and y
             x = reader.ReadInt32();
             y = reader.ReadInt32();
 
             // Initialize voxel array
-            voxels = new Voxel[16, 255, 16];
+            voxels = new IVoxel[16, 255, 16];
 
             // Read voxel data
             for (int i = 0; i < 16; i++)
@@ -89,12 +90,12 @@ public static class SaveSystem
                         if (voxelType == null)
                         {
                             // Handle error or default case (e.g., AirVoxel)
-                            voxels[i, j, k] = Voxel.Empty;
+                            voxels[i, j, k] = Air.Empty;
                             continue;
                         }
 
-                        Voxel voxel = (Voxel)Activator.CreateInstance(voxelType);
-                        if (voxel is InteractableVoxel interactableVoxel)
+                        IVoxel voxel = (IVoxel)Activator.CreateInstance(voxelType);
+                        if (voxel is IInteractableVoxel interactableVoxel)
                         {
                             interactableVoxel.LoadFromData(reader);
                         }
@@ -103,5 +104,10 @@ public static class SaveSystem
                 }
             }
         }
+    }
+
+    public static void SaveChunk(Vector2Int coord, IVoxel[,,] voxels)
+    {
+
     }
 }

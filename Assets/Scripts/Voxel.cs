@@ -3,133 +3,133 @@ using System.IO;
 
 namespace Voxels
 {
-    public abstract class Voxel
+    // Base interface for all voxels
+    public interface IVoxel
     {
-        // Temporary flag for setting to AirVoxel
-        public bool exists = true;
-
-        public virtual void Remove()
-        {
-            exists = false;
-        }
-
-        public static readonly AirVoxel Empty = new AirVoxel();
-
-        public abstract byte TextureID { get; }
-
-        public override string ToString()
-        {
-            return $"Voxel exists: {exists}, TextureID: {TextureID}, Type: {this.GetType()}";
-        }
+        bool Exists { get; }
+        byte TextureID { get; }
+        void Remove();
     }
 
-    public class AirVoxel : Voxel
+    public interface IBreakableVoxel : IVoxel
     {
-        public override void Remove() { } // Override remove to prevent tomfoolery
-        public override byte TextureID => 0;
-        public AirVoxel() { }
+        float Health { get; }
+        float Hardness { get; }
+        byte BreakingTool { get; }
+        bool NeedsBreakingTool { get; }
+        int DropAmount { get; }
+        void DealDamage(float amount, byte breakingTool);
     }
 
-    public abstract class BreakableVoxel : Voxel
+    public interface IFluidVoxel : IVoxel
     {
-        protected float health;
+        float Height { get; set; }
+        float SpreadFactor { get; }
+    }
+
+    public interface IInteractableVoxel : IBreakableVoxel
+    {
+        void SaveToData(BinaryWriter writer);
+        void LoadFromData(BinaryReader reader);
+    }
+
+    public struct AirVoxel : IVoxel
+    {
+        public readonly bool Exists => false;
+        public readonly byte TextureID => 0;
+
+        public readonly void Remove() { }
+    }
+
+    public struct BreakableVoxel : IBreakableVoxel
+    {
+        private float health;
+
+        public bool Exists { get; private set; }
         public float Health => health;
-        public abstract float Hardness { get; }
-        public abstract byte BreakingTool { get; }
-        public abstract bool NeedsBreakingTool { get; }
-        public virtual int DropAmount { get; } = 1;
-        // public virtual Item DroppedItem { get; } = Items.Air;
+        public float Hardness { get; init; }
+        public byte BreakingTool { get; init; }
+        public bool NeedsBreakingTool { get; init; }
+        public int DropAmount { get; init; }
+        public byte TextureID { get; init; }
 
-        public BreakableVoxel()
+        public BreakableVoxel(byte textureID, float hardness, byte breakingTool, bool needsBreakingTool, int dropAmount = 1)
         {
             health = 100;
+            Exists = true;
+            TextureID = textureID;
+            Hardness = hardness;
+            BreakingTool = breakingTool;
+            NeedsBreakingTool = needsBreakingTool;
+            DropAmount = dropAmount;
         }
+
+        public void Remove() => Exists = false;
 
         public void DealDamage(float amount, byte breakingTool)
         {
             amount /= Hardness;
-            if (!(BreakingTool == 0 || BreakingTool == 3) && BreakingTool != breakingTool) amount /= 4;
+            if (!(BreakingTool == 0 || BreakingTool == 3) && BreakingTool != breakingTool)
+                amount /= 4;
+
             health -= amount;
+
             if (health <= 0)
             {
-                Remove(); 
-                if (breakingTool == BreakingTool && NeedsBreakingTool) { /* DropItem(DroppedItem, DropAmount) add later*/ }
+                Remove();
+                if (breakingTool == BreakingTool && NeedsBreakingTool)
+                {
+                    // DropItem logic goes here
+                }
             }
         }
     }
 
-    public abstract class SolidVoxel : BreakableVoxel
+    public struct FluidVoxel : IFluidVoxel
     {
-        
+        public bool Exists { get; private set; }
+        public byte TextureID { get; init; }
+        public float Height { get; set; }
+        public float SpreadFactor { get; init; }
+
+        public FluidVoxel(byte textureID, float spreadFactor)
+        {
+            Exists = true;
+            TextureID = textureID;
+            Height = 100f;
+            SpreadFactor = spreadFactor;
+        }
+
+        public void Remove() => Exists = false;
     }
 
-    public abstract class TransparentVoxel : BreakableVoxel
+    public static class Air
     {
-
-    }
-
-    public abstract class FluidVoxel : Voxel
-    {
-        public float height = 100f;
-        public abstract float SpreadFactor { get; }
-    }
-
-    public abstract class InteractableVoxel : BreakableVoxel
-    {
-        public abstract void SaveToData(BinaryWriter writer);
-
-        public abstract void LoadFromData(BinaryReader reader);
+        public static AirVoxel Empty => new();
     }
 
     namespace Solid
     {
-        public class Dirt : SolidVoxel
+        public static class SolidVoxels
         {
-            public override byte TextureID => 1;
-            public override float Hardness => 0.7f;
-            public override byte BreakingTool => 3;
-            public override bool NeedsBreakingTool => false;
-        }
-
-        public class Grass: SolidVoxel
-        {
-            public override byte TextureID => 2;
-            public override float Hardness => 1.2f;
-            public override byte BreakingTool => 3;
-            public override bool NeedsBreakingTool => false;
-        }
-
-        public class Stone : SolidVoxel
-        {
-            public override byte TextureID => 4; // Skip one because id 3 is water 
-            public override float Hardness => 1f;
-            public override byte BreakingTool => 1;
-            public override bool NeedsBreakingTool => true;
-        }
-
-        public class WoodLog : SolidVoxel
-        {
-            public override byte TextureID => 5;
-            public override float Hardness => 3;
-            public override byte BreakingTool => 2;
-            public override bool NeedsBreakingTool => false;
-        }
-
-        public class Cobblestone : SolidVoxel
-        {
-            public override byte TextureID => 6;
-            public override float Hardness => 0.85f;
-            public override byte BreakingTool => 1;
-            public override bool NeedsBreakingTool => true;
+            public static BreakableVoxel Dirt => new(1, 0.7f, 3, false);
+            public static BreakableVoxel Grass => new(2, 1.2f, 3, false);
+            public static BreakableVoxel Stone => new(4, 1f, 1, true);
+            public static BreakableVoxel WoodLog => new(5, 3f, 2, false);
+            public static BreakableVoxel Cobblestone => new(6, 0.85f, 1, true);
         }
     }
 
     namespace Fluid
     {
-        public class Water : FluidVoxel
+        public static class FluidVoxels
         {
-            public override byte TextureID => 3;
-            public override float SpreadFactor => 2f;
+            public static FluidVoxel Water => new(3, 2f);
         }
     }
+}
+
+namespace System.Runtime.CompilerServices
+{
+    public sealed class IsExternalInit { }
 }
