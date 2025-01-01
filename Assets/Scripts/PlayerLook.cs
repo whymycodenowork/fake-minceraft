@@ -31,7 +31,7 @@ public class PlayerLook : MonoBehaviour
             float mouseY = Input.GetAxis("Mouse Y");
 
             turn.x += mouseY * sensitivity;
-            turn.x = Mathf.Clamp(turn.x, -90, 90); // Prevent excessive tilt
+            turn.x = Mathf.Clamp(turn.x, -80, 80); // Prevent excessive tilt
 
             // Apply vertical rotation to the head
             transform.localEulerAngles = new Vector3(0, 0, turn.x);

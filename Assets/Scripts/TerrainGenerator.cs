@@ -1,6 +1,3 @@
-using Voxels;
-using Voxels.Solid;
-using Voxels.Fluid;
 using UnityEngine;
 
 public class TerrainGenerator : MonoBehaviour
@@ -41,35 +38,35 @@ public class TerrainGenerator : MonoBehaviour
                         if (heightAtPoint >= 60)
                         {
                             // Create grass at top and if not submerged
-                            terrain[x, y, z] = new Grass();
+                            terrain[x, y, z] = new Voxel(2, 1);
                         }
                         else
                         {
                             // If submerged, place dirt instead
-                            terrain[x, y, z] = new Dirt();
+                            terrain[x, y, z] = new Voxel(1, 1);
                         }
                     }
                     else if (y < heightAtPoint && y > heightAtPoint - 6)
                     {
                         // Dirt
-                        terrain[x, y, z] = new Dirt();
+                        terrain[x, y, z] = new Voxel(1, 1);
                     }
                     else if (y < heightAtPoint - 5)
                     {
                         // Stone
-                        terrain[x, y, z] = new Stone();
+                        terrain[x, y, z] = new Voxel(4, 1);
                     }
                                       
                     else if (y > heightAtPoint && y <= 60)
                     {
                         // Water
-                        terrain[x, y, z] = new Water();
+                        terrain[x, y, z] = new Voxel(3, 2);
                     }
 
                     else
                     {
                         // Air
-                        terrain[x, y, z] = Voxel.Empty;
+                        terrain[x, y, z] = new Voxel();
                     }
                 }
             }

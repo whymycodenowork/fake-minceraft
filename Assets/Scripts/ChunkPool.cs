@@ -2,10 +2,10 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Threading.Tasks;
-using Voxels;
 using UnityEngine;
 using System;
 using System.Collections.Concurrent;
+using NUnit.Framework.Internal;
 
 public class ChunkPool : MonoBehaviour
 {
@@ -85,6 +85,8 @@ public class ChunkPool : MonoBehaviour
         {
             chunkScript.voxels = null;
         }
+
+        chunk.GetComponent<Chunk>().meshFilter.sharedMesh = null;
         chunk.SetActive(true);
     }
 
@@ -92,7 +94,7 @@ public class ChunkPool : MonoBehaviour
     {
         GameObject chunk = activeChunks[coord];
         string filePath = $"Assets/SaveData/SaveFile{saveFile}/chunk_{coord.x}_{coord.y}.dat";
-        IVoxel[,,] chunkVoxels = chunk.GetComponent<Chunk>().voxels;
+        Voxel[,,] chunkVoxels = chunk.GetComponent<Chunk>().voxels;
         SaveChunk(filePath, coord, chunkVoxels);
         chunk.SetActive(false);
         chunkPool.Enqueue(chunk);
@@ -116,7 +118,7 @@ public class ChunkPool : MonoBehaviour
         }
     }
 
-    async void SaveChunk(string filePath, Vector2Int coord, IVoxel[,,] chunkVoxels)
+    async void SaveChunk(string filePath, Vector2Int coord, Voxel[,,] chunkVoxels)
     {
         try
         {

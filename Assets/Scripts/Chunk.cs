@@ -1,13 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using Voxels;
 using UnityEngine;
 using UnityEditorInternal;
 
 public class Chunk : MonoBehaviour
 {
-    public IVoxel[,,] voxels = null;
+    public Voxel[,,] voxels = null;
     public TerrainGenerator terrainGenerator;
     public ChunkPool chunkPool;
 
@@ -17,9 +16,9 @@ public class Chunk : MonoBehaviour
     public int y;
     public bool isDirty;
 
-    private MeshFilter meshFilter;
-    private MeshCollider meshCollider;
-    private MeshRenderer meshRenderer;
+    public MeshFilter meshFilter;
+    public MeshCollider meshCollider;
+    public MeshRenderer meshRenderer;
 
     void Start()
     {
@@ -80,14 +79,14 @@ public class Chunk : MonoBehaviour
             {
                 for (int z = 0; z < 16; z++)
                 {
-                    IVoxel voxel = voxels[x, y, z];
-                    if (voxel is AirVoxel) continue; // Skip empty voxel
+                    Voxel voxel = voxels[x, y, z];
+                    if (voxel.type == 0) continue; // Skip empty voxel
                     // Assign faces to corresponding texture groups
 
                     for (int i = 0; i < 6; i++) // Loop through each face direction
                     {
                         Vector3 direction = indexToDirection[i];
-                        AddFaceIfNeeded(vertices, textureToTriangles[(voxel.TextureID, i)], uvs, new Vector3(x, y, z), direction);
+                        AddFaceIfNeeded(vertices, textureToTriangles[(voxel.id, i)], uvs, new Vector3(x, y, z), direction);
                     }
                 }
             }
@@ -129,7 +128,6 @@ public class Chunk : MonoBehaviour
     public void UpdateMeshLocal(int voxelX, int voxelY, int voxelZ)
     {
         isDirty = true; // Add local mesh logic later
-        meshFilter.sharedMesh = null;
     }
 
     public void LoadData(string filePath)

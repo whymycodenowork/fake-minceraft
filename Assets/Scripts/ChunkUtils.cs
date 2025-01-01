@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using Voxels;
 using UnityEngine;
 
 public static class ChunkUtils
@@ -13,13 +12,8 @@ public static class ChunkUtils
             return false;
         }
 
-        IVoxel voxel = chunk.voxels[x, y, z];
-        if (voxel == null)
-        {
-            //Debug.LogWarning("voxel is null");
-            return false;
-        }
-        if (voxel == Air.Empty) return true;
+        Voxel voxel = chunk.voxels[x, y, z];
+        if (voxel.type == 0) return true;
 
         int newX = x + (int)direction.x;
         int newY = y + (int)direction.y;
@@ -41,7 +35,7 @@ public static class ChunkUtils
             {
                 newX = (newX + ChunkSize) % ChunkSize;
                 newZ = (newZ + ChunkSize) % ChunkSize;
-                IVoxel[,,] nextChunkVoxels = nextChunk.GetComponent<Chunk>().voxels;
+                Voxel[,,] nextChunkVoxels = nextChunk.GetComponent<Chunk>().voxels;
 
                 if (nextChunkVoxels == null)
                 {
@@ -49,46 +43,38 @@ public static class ChunkUtils
                     return false;
                 }
 
-                IVoxel nextChunkVoxel = nextChunkVoxels[newX, newY, newZ];
-                if (nextChunkVoxel == null)
-                {
-                    //Debug.LogWarning("Voxel in the neighboring chunk is null");
-                    return false;
-                }
-                if (nextChunkVoxel is ISolidVoxel && voxel is ISolidVoxel) return false;
+                Voxel nextChunkVoxel = nextChunkVoxels[newX, newY, newZ];
+                if (nextChunkVoxel.type == 1 && voxel.type == 1) return false;
 
                 return true;
             }
             return false;
         }
 
-        IVoxel neighborVoxel = chunk.voxels[newX, newY, newZ];
-        if (neighborVoxel == null)
-        {
-            Debug.Log("Other voxel is null");
-            return false;
-        }
-        if (neighborVoxel is SolidVoxel && voxel is SolidVoxel) return false;
+        Voxel neighborVoxel = chunk.voxels[newX, newY, newZ];
+        if (neighborVoxel.type == 1 && voxel.type == 1) return false;
 
         return true;
     }
 
-    public static bool CheckNextVoxel(Chunk chunk, int x, int y, int z, Vector3 direction, out IVoxel nextVoxel, out Vector3Int nextPosition, out Vector2Int nextChunkPos)
+    public static bool CheckNextVoxel(Chunk chunk, int x, int y, int z, Vector3 direction, out Voxel nextVoxel, out Vector3Int nextPosition, out Vector2Int nextChunkPos)
     {
 
         int newX = x + (int)direction.x;
         int newY = y + (int)direction.y;
         int newZ = z + (int)direction.z;
 
-        if (newY >= 255) {
+        if (newY >= 255)
+        {
             nextPosition = Vector3Int.zero;
-            nextVoxel = Voxel.Empty;
+            nextVoxel = new Voxel();
             nextChunkPos = Vector2Int.zero;
             return false;
         }
-        if (newY < 0) {
+        if (newY < 0)
+        {
             nextPosition = Vector3Int.zero;
-            nextVoxel = Voxel.Empty;
+            nextVoxel = new Voxel();
             nextChunkPos = Vector2Int.zero;
             return false;
         }
@@ -105,21 +91,21 @@ public static class ChunkUtils
                 newX = (newX + 16) % 16;
                 newZ = (newZ + 16) % 16;
                 nextPosition = new Vector3Int(newX, y, newZ);
-                IVoxel[,,] nextChunkVoxels = nextChunkScript.voxels;
+                Voxel[,,] nextChunkVoxels = nextChunkScript.voxels;
                 if (nextChunkVoxels == null)
                 {
                     nextPosition = Vector3Int.zero;
-                    nextVoxel = Air.Empty;
+                    nextVoxel = new Voxel();
                     nextChunkPos = Vector2Int.zero;
                     return false;
                 }
                 nextVoxel = nextChunkVoxels[newX, y, newZ];
-                IVoxel nextChunkVoxel = nextChunkVoxels[newX, y, newZ];
+                Voxel nextChunkVoxel = nextChunkVoxels[newX, y, newZ];
                 nextChunkPos = new Vector2Int(nextChunkScript.x, nextChunkScript.y);
                 return true;
             }
             nextPosition = Vector3Int.zero;
-            nextVoxel = Voxel.Empty;
+            nextVoxel = new Voxel();
             nextChunkPos = Vector2Int.zero;
             return false;
         }

@@ -1,4 +1,3 @@
-using Voxels;
 using UnityEngine;
 using NUnit.Framework.Internal;
 public class Player : MonoBehaviour
@@ -17,7 +16,7 @@ public class Player : MonoBehaviour
     public GameObject boxPrefab;
     public ChunkPool chunkPool;
     public bool canFly;
-    public Voxel selectedBlock = new Voxels.Solid.Cobblestone();
+    public Voxel selectedBlock = new Voxel(6, 1);
 
     // Start is called before the first frame update
     void Start()
@@ -145,7 +144,7 @@ public class Player : MonoBehaviour
 
     void DetectInteractions()
     {
-        Ray ray = new Ray(transform.position + (Vector3.up / 2), MainCamera.forward);
+        Ray ray = new Ray(MainCamera.transform.position, MainCamera.forward);
         if (Physics.Raycast(ray, out RaycastHit hit, selectDistance, groundLayer))
         {
             // Get the hit location and adjust based on hit normal to avoid incorrect rounding
@@ -207,9 +206,9 @@ public class Player : MonoBehaviour
                 case 0: // Left-click: Remove voxel
 
                     Voxel voxel = chunkVoxels[(int)localPosition.x, (int)localPosition.y, (int)localPosition.z];
-                    if (voxel == Voxel.Empty) break;
+                    if (voxel.type == 0) break;
                     // Debug.Log($"Deleted {voxel}");
-                    chunkVoxels[(int)localPosition.x, (int)localPosition.y, (int)localPosition.z] = Voxel.Empty;
+                    chunkVoxels[(int)localPosition.x, (int)localPosition.y, (int)localPosition.z].type = 0;
                     chunkScript.UpdateMeshLocal((int)localPosition.x, (int)localPosition.y, (int)localPosition.z);
                     break;
                 case 1: // Right-click: Place voxel
