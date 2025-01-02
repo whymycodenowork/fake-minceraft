@@ -49,12 +49,12 @@ public class Chunk : MonoBehaviour
     {
         if (isDirty)
         {
-            StartCoroutine(GenerateMeshDataOverTime());
+            StartCoroutine(GenerateMesh());
             isDirty = false;
         }
     }
 
-    IEnumerator GenerateMeshDataOverTime()
+    IEnumerator GenerateMesh()
     {
         Mesh mesh = new Mesh();
         List<Vector3> vertices = new List<Vector3>();
@@ -127,13 +127,34 @@ public class Chunk : MonoBehaviour
 
     public void UpdateMeshLocal(int voxelX, int voxelY, int voxelZ)
     {
+        if (voxelX == 0)
+        {
+            // Update chunk on the left
+            chunkPool.activeChunks[new Vector2Int(x - 1, y)].GetComponent<Chunk>().CreateMesh();
+        }
+        if (voxelX == 15)
+        {
+            // Update chunk on the right
+            chunkPool.activeChunks[new Vector2Int(x + 1, y)].GetComponent<Chunk>().CreateMesh();
+        }
+        if (voxelZ == 0)
+        {
+            // Update chunk below
+            chunkPool.activeChunks[new Vector2Int(x, y - 1)].GetComponent<Chunk>().CreateMesh();
+        }
+        if (voxelZ == 15)
+        {
+            // Update chunk above
+            chunkPool.activeChunks[new Vector2Int(x, y + 1)].GetComponent<Chunk>().CreateMesh();
+        }
         isDirty = true; // Add local mesh logic later
     }
 
-    public void LoadData(string filePath)
+    public void LoadData(Vector2Int coord)
     {
-        SaveSystem.LoadChunkFromDisk(filePath, ref x, ref y, ref voxels);
-
+        SaveSystem.LoadChunk(coord, out voxels);
+        x = coord.x;
+        y = coord.y;
         // Once data is loaded, mark the mesh as dirty
         CreateMesh();
     }

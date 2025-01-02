@@ -16,7 +16,6 @@ public class ChunkPool : MonoBehaviour
     private readonly static int chunkSize = 16;
 
     public Dictionary<Vector2Int, GameObject> activeChunks = new Dictionary<Vector2Int, GameObject>();
-    private ConcurrentDictionary<Vector2Int, bool> savingChunks = new ConcurrentDictionary<Vector2Int, bool>();
     private readonly Queue<GameObject> chunkPool = new Queue<GameObject>();
 
     async void Update()
@@ -79,23 +78,22 @@ public class ChunkPool : MonoBehaviour
 
         if (File.Exists(filePath))
         {
-            await Task.Run(() => chunkScript.LoadData(filePath)); // Load data asynchronously
+            await Task.Run(() => chunkScript.LoadData(coord)); // Load data asynchronously
         }
         else
         {
             chunkScript.voxels = null;
         }
 
-        chunk.GetComponent<Chunk>().meshFilter.sharedMesh = null;
+        chunkScript.meshFilter.sharedMesh = null;
         chunk.SetActive(true);
     }
 
     void UnloadChunk(Vector2Int coord)
     {
         GameObject chunk = activeChunks[coord];
-        string filePath = $"Assets/SaveData/SaveFile{saveFile}/chunk_{coord.x}_{coord.y}.dat";
         Voxel[,,] chunkVoxels = chunk.GetComponent<Chunk>().voxels;
-        SaveChunk(filePath, coord, chunkVoxels);
+        SaveSystem.SaveChunk(coord, chunkVoxels);
         chunk.SetActive(false);
         chunkPool.Enqueue(chunk);
         activeChunks.Remove(coord);
@@ -115,25 +113,6 @@ public class ChunkPool : MonoBehaviour
         foreach (var chunkCoord in chunksToUnload)
         {
             UnloadChunk(chunkCoord);
-        }
-    }
-
-    async void SaveChunk(string filePath, Vector2Int coord, Voxel[,,] chunkVoxels)
-    {
-        try
-        {
-            if (savingChunks.ContainsKey(coord) && savingChunks[coord]) return;
-
-            savingChunks[coord] = true;
-            await Task.Run(() => SaveSystem.SaveChunk(coord, chunkVoxels));
-        }
-        catch (Exception ex)
-        {
-            Debug.LogError($"Error saving chunk at {coord}: {ex.Message}");
-        }
-        finally
-        {
-            savingChunks[coord] = false;
         }
     }
 }

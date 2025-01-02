@@ -115,7 +115,7 @@ public class Player : MonoBehaviour
         }
 
         movementDirection.y = 0; // Make movement horizontal
-        movementDirection.Normalize(); // Maintain consistent speed
+        movementDirection.Normalize(); // No square root of 2 times extra speed when holding 2 keys
 
         MyRigidbody.linearVelocity += movementDirection * movementSpeed;
     }

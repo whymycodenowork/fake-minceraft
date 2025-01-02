@@ -17,6 +17,8 @@ public class PauseManager : MonoBehaviour
 
     void Update()
     {
+        // use this update cuz im not using it for much else
+        SaveSystem.Update(Time.deltaTime);
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             if (isPaused)
@@ -61,5 +63,10 @@ public class PauseManager : MonoBehaviour
     {
         pauseSettings.SetActive(false);
         pauseMain.SetActive(true);
+    }
+
+    private void OnApplicationQuit()
+    {
+        SaveSystem.SaveAllChunksToDisk();
     }
 }
