@@ -21,7 +21,7 @@ public class Chunk : MonoBehaviour
     private MeshCollider meshCollider;
     private MeshRenderer meshRenderer;
 
-    void Start()
+    void Awake()
     {
         meshFilter = GetComponent<MeshFilter>();
         meshCollider = GetComponent<MeshCollider>();
@@ -44,6 +44,7 @@ public class Chunk : MonoBehaviour
     public void CreateMesh()
     {
         isDirty = true;
+        meshFilter.sharedMesh = null;
     }
 
     void Update()
@@ -129,7 +130,6 @@ public class Chunk : MonoBehaviour
     public void UpdateMeshLocal(int voxelX, int voxelY, int voxelZ)
     {
         isDirty = true; // Add local mesh logic later
-        meshFilter.sharedMesh = null;
     }
 
     public void LoadData(string filePath)
@@ -186,12 +186,12 @@ public class Chunk : MonoBehaviour
         Vector3.down
     };
 
-    // Define face vertices depending on the direction
     public bool HasMesh()
     {
         return meshFilter != null;
     }
 
+    // Define face vertices depending on the direction
     private static readonly Vector3[] faceVerticesUp = new Vector3[]
     {
         new Vector3(-0.5f, 0.5f, -0.5f),

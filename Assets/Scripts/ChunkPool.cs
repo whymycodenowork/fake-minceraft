@@ -116,12 +116,10 @@ public class ChunkPool : MonoBehaviour
     }
     async void SaveChunk(string filePath, Vector2Int coord, Voxel[,,] chunkVoxels)
     {
-        if (!savingChunks.ContainsKey(coord))
+        Debug.Log("saving");
+        if (savingChunks.ContainsKey(coord) && savingChunks[coord])
         {
-            return;
-        }
-        if (savingChunks[coord])
-        {
+            Debug.Log("already saving");
             return;
         }
         savingChunks[coord] = true;

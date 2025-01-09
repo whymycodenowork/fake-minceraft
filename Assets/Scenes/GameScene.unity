@@ -3946,7 +3946,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   MyRigidbody: {fileID: 1393407526}
   MainCamera: {fileID: 963194228}
-  baseMovementSpeed: 0.1
+  baseMovementSpeed: 1
   movementSpeed: 1
   jumpHeight: 1
   groundLayer:
@@ -3990,7 +3990,7 @@ CapsuleCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1393407523}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: 4f062648687e2cd429b14dc3517b5646, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -4210,7 +4210,6 @@ MonoBehaviour:
   offset2: {x: -6788, y: 3567}
   zoom2: 0.01
   heightMultiplier: 100
-  zoom: 0.01
 --- !u!1 &1572021991
 GameObject:
   m_ObjectHideFlags: 0
@@ -5797,7 +5796,6 @@ SceneRoots:
   m_Roots:
   - {fileID: 1393407524}
   - {fileID: 705507995}
-  - {fileID: 1393407524}
   - {fileID: 8276644184743392903}
   - {fileID: 1564931706}
   - {fileID: 52430374}
