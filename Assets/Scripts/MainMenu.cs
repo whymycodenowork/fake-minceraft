@@ -6,14 +6,12 @@ public class MainMenu : MonoBehaviour
 {
     public GameObject main;
     public GameObject settings;
-    public GameObject loadGame;
-    public GameObject newGame;
+    public GameObject singleplayer;
     public GameObject back;
     void Start()
     {
         settings.SetActive(false);
-        loadGame.SetActive(false);
-        newGame.SetActive(false);
+        singleplayer.SetActive(false);
     }
 
     void Update()
@@ -31,21 +29,20 @@ public class MainMenu : MonoBehaviour
     public void Back()
     {
         settings.SetActive(false);
-        loadGame.SetActive(false);
-        newGame.SetActive(false);
+        singleplayer.SetActive(false);
         main.SetActive(true);
     }
 
-    public void NewGame()
+    public void Singleplayer()
     {
         main.SetActive(false);
-        newGame.SetActive(true);
+        singleplayer.SetActive(true);
     }
 
-    public void LoadGame()
+    public void Play()
     {
         main.SetActive(false);
-        loadGame.SetActive(true);
+        SceneManager.LoadScene("GameScene");
     }
 
     public void OpenSettings()

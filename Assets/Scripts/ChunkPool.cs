@@ -1,10 +1,7 @@
 using System.Collections.Generic;
-using System.Drawing;
 using System.IO;
 using System.Threading.Tasks;
-using Voxels;
 using UnityEngine;
-using System;
 
 public class ChunkPool : MonoBehaviour
 {
@@ -14,9 +11,8 @@ public class ChunkPool : MonoBehaviour
     public int saveFile = 1;
     private readonly static int chunkSize = 16;
 
-    public Dictionary<Vector2Int, GameObject> activeChunks = new Dictionary<Vector2Int, GameObject>();
-    private Dictionary<Vector2Int, bool> savingChunks = new Dictionary<Vector2Int, bool>();
-    private readonly Queue<GameObject> chunkPool = new Queue<GameObject>();
+    public Dictionary<Vector2Int, GameObject> activeChunks = new();
+    private readonly Queue<GameObject> chunkPool = new();
 
     async void Update()
     {
@@ -26,16 +22,16 @@ public class ChunkPool : MonoBehaviour
     async Task UpdateChunks()
     {
         // Calculate player chunk position
-        Vector2 playerChunkPosition = new Vector2(player.position.x / chunkSize, player.position.z / chunkSize);
-        Vector2Int playerChunkCoord = new Vector2Int(Mathf.FloorToInt(playerChunkPosition.x), Mathf.FloorToInt(playerChunkPosition.y));
+        Vector2 playerChunkPosition = new(player.position.x / chunkSize, player.position.z / chunkSize);
+        Vector2Int playerChunkCoord = new(Mathf.FloorToInt(playerChunkPosition.x), Mathf.FloorToInt(playerChunkPosition.y));
 
         // Load chunks around the player
-        List<Task> loadingTasks = new List<Task>();
+        List<Task> loadingTasks = new();
         for (int x = -viewDistance + playerChunkCoord.x; x <= viewDistance + playerChunkCoord.x; x++)
         {
             for (int y = -viewDistance + playerChunkCoord.y; y <= viewDistance + playerChunkCoord.y; y++)
             {
-                Vector2Int chunkCoord = new Vector2Int(x, y);
+                Vector2Int chunkCoord = new(x, y);
 
                 if (!activeChunks.ContainsKey(chunkCoord))
                 {
@@ -78,21 +74,37 @@ public class ChunkPool : MonoBehaviour
 
         if (File.Exists(filePath))
         {
-            await Task.Run(() => chunkScript.LoadData(filePath)); // Load data asynchronously
+            await Task.Run(() => chunkScript.LoadData(coord)); // Load data asynchronously
         }
         else
         {
             chunkScript.voxels = null;
         }
+        if (activeChunks.TryGetValue(new Vector2Int(chunkScript.x + 1, chunkScript.y), out GameObject rightChunk))
+        {
+            rightChunk.GetComponent<Chunk>().CreateMesh();
+        }
+        if (activeChunks.TryGetValue(new Vector2Int(chunkScript.x - 1, chunkScript.y), out GameObject leftChunk))
+        {
+            leftChunk.GetComponent<Chunk>().CreateMesh();
+        }
+        if (activeChunks.TryGetValue(new Vector2Int(chunkScript.x, chunkScript.y + 1), out GameObject topChunk))
+        {
+            topChunk.GetComponent<Chunk>().CreateMesh();
+        }
+        if (activeChunks.TryGetValue(new Vector2Int(chunkScript.x, chunkScript.y - 1), out GameObject bottomChunk))
+        {
+            bottomChunk.GetComponent<Chunk>().CreateMesh();
+        }
+        chunkScript.meshFilter.sharedMesh = null;
         chunk.SetActive(true);
     }
 
     void UnloadChunk(Vector2Int coord)
     {
         GameObject chunk = activeChunks[coord];
-        string filePath = $"Assets/SaveData/SaveFile{saveFile}/chunk_{coord.x}_{coord.y}.dat";
         Voxel[,,] chunkVoxels = chunk.GetComponent<Chunk>().voxels;
-        SaveChunk(filePath, coord, chunkVoxels);
+        SaveSystem.SaveChunk(coord, chunkVoxels);
         chunk.SetActive(false);
         chunkPool.Enqueue(chunk);
         activeChunks.Remove(coord);
@@ -100,7 +112,7 @@ public class ChunkPool : MonoBehaviour
 
     void UnloadDistantChunks(Vector2Int playerChunkCoord)
     {
-        List<Vector2Int> chunksToUnload = new List<Vector2Int>();
+        List<Vector2Int> chunksToUnload = new();
         foreach (var chunk in activeChunks)
         {
             if (Vector2Int.Distance(chunk.Key, playerChunkCoord) > viewDistance)
@@ -113,17 +125,5 @@ public class ChunkPool : MonoBehaviour
         {
             UnloadChunk(chunkCoord);
         }
-    }
-    async void SaveChunk(string filePath, Vector2Int coord, Voxel[,,] chunkVoxels)
-    {
-        Debug.Log("saving");
-        if (savingChunks.ContainsKey(coord) && savingChunks[coord])
-        {
-            Debug.Log("already saving");
-            return;
-        }
-        savingChunks[coord] = true;
-        await Task.Run(() => SaveSystem.SaveChunk(filePath, coord.x, coord.y, chunkVoxels));
-        savingChunks[coord] = false;
     }
 }

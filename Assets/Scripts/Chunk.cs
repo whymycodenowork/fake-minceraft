@@ -1,9 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
-using Voxels;
 using UnityEngine;
-using UnityEditorInternal;
 
 public class Chunk : MonoBehaviour
 {
@@ -17,9 +14,9 @@ public class Chunk : MonoBehaviour
     public int y;
     public bool isDirty;
 
-    private MeshFilter meshFilter;
-    private MeshCollider meshCollider;
-    private MeshRenderer meshRenderer;
+    public MeshFilter meshFilter;
+    public MeshCollider meshCollider;
+    public MeshRenderer meshRenderer;
 
     void Awake()
     {
@@ -33,10 +30,7 @@ public class Chunk : MonoBehaviour
     {
         transform.position = new Vector3(x * 16, 0, y * 16);
 
-        if (voxels == null)
-        {
-            voxels = terrainGenerator.GenerateTerrain(x, y);
-        }
+        voxels ??= terrainGenerator.GenerateTerrain(x, y);
 
         CreateMesh();
     }
@@ -51,20 +45,20 @@ public class Chunk : MonoBehaviour
     {
         if (isDirty)
         {
-            StartCoroutine(GenerateMeshDataOverTime());
+            StartCoroutine(GenerateMesh());
             isDirty = false;
         }
     }
 
-    IEnumerator GenerateMeshDataOverTime()
+    IEnumerator GenerateMesh()
     {
-        Mesh mesh = new Mesh();
-        List<Vector3> vertices = new List<Vector3>();
-        List<Vector2> uvs = new List<Vector2>();
+        Mesh mesh = new();
+        List<Vector3> vertices = new();
+        List<Vector2> uvs = new();
 
         // Dictionary to store triangle lists for each texture on each face
-        Dictionary<(int, int), List<int>> textureToTriangles = new Dictionary<(int, int), List<int>>();
-        List<Material> meshMaterials = new List<Material>();
+        Dictionary<(int, int), List<int>> textureToTriangles = new();
+        List<Material> meshMaterials = new();
 
         // Initialize the triangle list for each texture and face direction
         for (int id = 0; id < this.materials.GetLength(0); id++)
@@ -82,13 +76,13 @@ public class Chunk : MonoBehaviour
                 for (int z = 0; z < 16; z++)
                 {
                     Voxel voxel = voxels[x, y, z];
-                    if (voxel is AirVoxel) continue; // Skip empty voxel
+                    if (voxel.type == 0) continue; // Skip empty voxel
                     // Assign faces to corresponding texture groups
 
                     for (int i = 0; i < 6; i++) // Loop through each face direction
                     {
                         Vector3 direction = indexToDirection[i];
-                        AddFaceIfNeeded(vertices, textureToTriangles[(voxel.TextureID, i)], uvs, new Vector3(x, y, z), direction);
+                        AddFaceIfNeeded(vertices, textureToTriangles[(voxel.id, i)], uvs, new Vector3(x, y, z), direction);
                     }
                 }
             }
@@ -127,15 +121,36 @@ public class Chunk : MonoBehaviour
         meshRenderer.materials = meshMaterials.ToArray();
     }
 
-    public void UpdateMeshLocal(int voxelX, int voxelY, int voxelZ)
+    public void UpdateMeshLocal(int voxelX, int voxelZ)
     {
+        if (voxelX == 0)
+        {
+            // Update chunk on the left
+            chunkPool.activeChunks[new Vector2Int(x - 1, y)].GetComponent<Chunk>().CreateMesh();
+        }
+        if (voxelX == 15)
+        {
+            // Update chunk on the right
+            chunkPool.activeChunks[new Vector2Int(x + 1, y)].GetComponent<Chunk>().CreateMesh();
+        }
+        if (voxelZ == 0)
+        {
+            // Update chunk below
+            chunkPool.activeChunks[new Vector2Int(x, y - 1)].GetComponent<Chunk>().CreateMesh();
+        }
+        if (voxelZ == 15)
+        {
+            // Update chunk above
+            chunkPool.activeChunks[new Vector2Int(x, y + 1)].GetComponent<Chunk>().CreateMesh();
+        }
         isDirty = true; // Add local mesh logic later
     }
 
-    public void LoadData(string filePath)
+    public void LoadData(Vector2Int coord)
     {
-        SaveSystem.LoadChunk(filePath, ref x, ref y, ref voxels);
-
+        SaveSystem.LoadChunk(coord, out voxels);
+        x = coord.x;
+        y = coord.y;
         // Once data is loaded, mark the mesh as dirty
         CreateMesh();
     }
@@ -186,65 +201,62 @@ public class Chunk : MonoBehaviour
         Vector3.down
     };
 
-    public bool HasMesh()
-    {
-        return meshFilter != null;
-    }
+    public bool HasMesh => meshFilter != null;
 
     // Define face vertices depending on the direction
     private static readonly Vector3[] faceVerticesUp = new Vector3[]
     {
-        new Vector3(-0.5f, 0.5f, -0.5f),
-        new Vector3(0.5f, 0.5f, -0.5f),
-        new Vector3(-0.5f, 0.5f, 0.5f),
-        new Vector3(0.5f, 0.5f, 0.5f)
+        new(-0.5f, 0.5f, -0.5f),
+        new(0.5f, 0.5f, -0.5f),
+        new(-0.5f, 0.5f, 0.5f),
+        new(0.5f, 0.5f, 0.5f)
     };
 
     private static readonly Vector3[] faceVerticesDown = new Vector3[]
     {
-        new Vector3(-0.5f, -0.5f, 0.5f),
-        new Vector3(0.5f, -0.5f, 0.5f),
-        new Vector3(-0.5f, -0.5f, -0.5f),
-        new Vector3(0.5f, -0.5f, -0.5f)
+        new(-0.5f, -0.5f, 0.5f),
+        new(0.5f, -0.5f, 0.5f),
+        new(-0.5f, -0.5f, -0.5f),
+        new(0.5f, -0.5f, -0.5f)
     };
 
     private static readonly Vector3[] faceVerticesRight = new Vector3[]
     {
-        new Vector3(0.5f, 0.5f, 0.5f),
-        new Vector3(0.5f, 0.5f, -0.5f),
-        new Vector3(0.5f, -0.5f, 0.5f),
-        new Vector3(0.5f, -0.5f, -0.5f)
+        new(0.5f, 0.5f, 0.5f),
+        new(0.5f, 0.5f, -0.5f),
+        new(0.5f, -0.5f, 0.5f),
+        new(0.5f, -0.5f, -0.5f)
     };
 
     private static readonly Vector3[] faceVerticesLeft = new Vector3[]
     {
-        new Vector3(-0.5f, 0.5f, -0.5f),
-        new Vector3(-0.5f, 0.5f, 0.5f),
-        new Vector3(-0.5f, -0.5f, -0.5f),
-        new Vector3(-0.5f, -0.5f, 0.5f)
+        new(-0.5f, 0.5f, -0.5f),
+        new(-0.5f, 0.5f, 0.5f),
+        new(-0.5f, -0.5f, -0.5f),
+        new(-0.5f, -0.5f, 0.5f)
     };
 
     private static readonly Vector3[] faceVerticesForward = new Vector3[]
     {
-        new Vector3(-0.5f, 0.5f, 0.5f),
-        new Vector3(0.5f, 0.5f, 0.5f),
-        new Vector3(-0.5f, -0.5f, 0.5f),
-        new Vector3(0.5f, -0.5f, 0.5f)
+        new(-0.5f, 0.5f, 0.5f),
+        new(0.5f, 0.5f, 0.5f),
+        new(-0.5f, -0.5f, 0.5f),
+        new(0.5f, -0.5f, 0.5f)
     };
 
     private static readonly Vector3[] faceVerticesBack = new Vector3[]
     {
-        new Vector3(0.5f, 0.5f, -0.5f),
-        new Vector3(-0.5f, 0.5f, -0.5f),
-        new Vector3(0.5f, -0.5f, -0.5f),
-        new Vector3(-0.5f, -0.5f, -0.5f)
+        new(0.5f, 0.5f, -0.5f),
+        new(-0.5f, 0.5f, -0.5f),
+        new(0.5f, -0.5f, -0.5f),
+        new(-0.5f, -0.5f, -0.5f)
     };
 
     private static readonly Vector2[] faceUVs = new Vector2[]
     {
-        new Vector2(0, 1),
-        new Vector2(1, 1),
-        new Vector2(0, 0),
-        new Vector2(1, 0)
+        new(0, 1),
+        new(1, 1),
+        new(0, 0),
+        new(1, 0)
     };
 }

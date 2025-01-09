@@ -1,10 +1,11 @@
-using Voxels;
+using Items;
 using UnityEngine;
-using NUnit.Framework.Internal;
 public class Player : MonoBehaviour
 {
     public Rigidbody MyRigidbody;
     public Transform MainCamera;
+    public PauseManager pauseManager;
+    public InventoryManager inventoryManager;
     public float baseMovementSpeed;
     public float movementSpeed;
     public float jumpHeight;
@@ -17,7 +18,7 @@ public class Player : MonoBehaviour
     public GameObject boxPrefab;
     public ChunkPool chunkPool;
     public bool canFly;
-    public Voxel selectedBlock = new Voxels.Solid.Cobblestone();
+    public Voxel selectedBlock = new(6, 1);
 
     // Start is called before the first frame update
     void Start()
@@ -27,10 +28,9 @@ public class Player : MonoBehaviour
         indicatorBox.transform.localScale = new Vector3(1.05f, 1.05f, 1.05f);
 
         // Set the box's material color to translucent white
-        Renderer boxRenderer = indicatorBox.GetComponent<Renderer>();
-        if (boxRenderer != null)
+        if (indicatorBox.TryGetComponent<Renderer>(out var boxRenderer))
         {
-            Color translucentWhite = new Color(1f, 1f, 1f, 0.5f);
+            Color translucentWhite = new(1f, 1f, 1f, 0.5f);
             boxRenderer.material.color = translucentWhite;
         }
 
@@ -41,6 +41,13 @@ public class Player : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (pauseManager.isPaused || inventoryManager.inventoryOpen) return; // Don't do anything if a menu is open
+        Item selectedItem = inventoryManager.hotbarItems[(int)Mathf.Round(inventoryManager.hotbarSlot)];
+        if (selectedItem is AirItem) selectedBlock = new Voxel(0, 0);
+        if (selectedItem is BlockItem blockItem)
+        {
+            selectedBlock = blockItem.BlockToPlace;
+        }
         MovePlayer();
         Vector3 targetVelocity = Vector3.SmoothDamp(MyRigidbody.linearVelocity, Vector3.zero, ref currentVelocity, 0.2f);
         MyRigidbody.linearVelocity = new Vector3(targetVelocity.x, MyRigidbody.linearVelocity.y, targetVelocity.z);
@@ -77,7 +84,7 @@ public class Player : MonoBehaviour
             MyRigidbody.velocity = Vector3.zero;
             Debug.LogWarning("out of bounds!");
         }
-        else if (chunkPool.activeChunks[new Vector2Int(currentChunkPos.x, currentChunkPos.y)].GetComponent<Chunk>().HasMesh())
+        else if (chunkPool.activeChunks[new Vector2Int(currentChunkPos.x, currentChunkPos.y)].GetComponent<Chunk>().HasMesh)
         {
             MyRigidbody.velocity = Vector3.zero;
             Debug.LogWarning("out of bounds!");
@@ -116,7 +123,7 @@ public class Player : MonoBehaviour
         }
 
         movementDirection.y = 0; // Make movement horizontal
-        movementDirection.Normalize(); // Maintain consistent speed
+        movementDirection.Normalize(); // No square root of 2 times extra speed when holding 2 keys 
 
         MyRigidbody.linearVelocity += movementDirection * movementSpeed;
     }
@@ -145,7 +152,7 @@ public class Player : MonoBehaviour
 
     void DetectInteractions()
     {
-        Ray ray = new Ray(transform.position + (Vector3.up / 2), MainCamera.forward);
+        Ray ray = new(MainCamera.transform.position, MainCamera.forward);
         if (Physics.Raycast(ray, out RaycastHit hit, selectDistance, groundLayer))
         {
             // Get the hit location and adjust based on hit normal to avoid incorrect rounding
@@ -160,7 +167,7 @@ public class Player : MonoBehaviour
             }
 
             // Round the hit point adjusted to the nearest integer
-            Vector3Int roundedHitPoint = new Vector3Int(
+            Vector3Int roundedHitPoint = new(
                 Mathf.RoundToInt(hitPointAdjusted.x),
                 Mathf.RoundToInt(hitPointAdjusted.y),
                 Mathf.RoundToInt(hitPointAdjusted.z)
@@ -176,11 +183,11 @@ public class Player : MonoBehaviour
             }
 
             if (Input.GetMouseButton(0))
-                Interact(0, roundedHitPoint, hit.normal);
+                Interact(0, roundedHitPoint);
             else if (Input.GetMouseButton(1))
-                Interact(1, roundedHitPoint, hit.normal);
+                Interact(1, roundedHitPoint);
             else if (Input.GetMouseButton(2))
-                Interact(2, roundedHitPoint, hit.normal);
+                Interact(2, roundedHitPoint);
         }
         else
         {
@@ -192,7 +199,7 @@ public class Player : MonoBehaviour
         }
     }
 
-    void Interact(int mouseButton, Vector3Int position, Vector3 direction)
+    void Interact(int mouseButton, Vector3Int position)
     {
         Vector2Int chunkCoords = GetChunkPosition(position, out Vector3 localPosition);
 
@@ -207,14 +214,17 @@ public class Player : MonoBehaviour
                 case 0: // Left-click: Remove voxel
 
                     Voxel voxel = chunkVoxels[(int)localPosition.x, (int)localPosition.y, (int)localPosition.z];
-                    if (voxel == Voxel.Empty) break;
-                    Debug.Log($"Deleted {voxel}");
-                    chunkVoxels[(int)localPosition.x, (int)localPosition.y, (int)localPosition.z] = Voxel.Empty;
-                    chunkScript.UpdateMeshLocal((int)localPosition.x, (int)localPosition.y, (int)localPosition.z);
+                    if (voxel.type == 0) break;
+                    // Debug.Log($"Deleted {voxel}");
+                    chunkVoxels[(int)localPosition.x, (int)localPosition.y, (int)localPosition.z].type = 0;
+                    chunkScript.UpdateMeshLocal((int)localPosition.x, (int)localPosition.z);
                     break;
                 case 1: // Right-click: Place voxel
                     chunkVoxels[(int)localPosition.x, (int)localPosition.y, (int)localPosition.z] = selectedBlock;
-                    chunkScript.UpdateMeshLocal((int)localPosition.x, (int)localPosition.y, (int)localPosition.z);
+                    chunkScript.UpdateMeshLocal((int)localPosition.x, (int)localPosition.z);
+                    break;
+                case 2:
+                    selectedBlock = chunkVoxels[(int)localPosition.x, (int)localPosition.y, (int)localPosition.z];
                     break;
                 default:
                     break;
