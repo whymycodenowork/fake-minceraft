@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public static class ChunkUtils
@@ -29,7 +27,7 @@ public static class ChunkUtils
 
         if (isOutOfBounds)
         {
-            Vector2Int targetChunkCoord = new Vector2Int(chunk.x + (int)direction.x, chunk.y + (int)direction.z);
+            Vector2Int targetChunkCoord = new(chunk.x + (int)direction.x, chunk.y + (int)direction.z);
 
             if (chunk.chunkPool.activeChunks.TryGetValue(targetChunkCoord, out GameObject nextChunk))
             {

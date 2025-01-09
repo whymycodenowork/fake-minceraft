@@ -56,7 +56,7 @@ public class TerrainGenerator : MonoBehaviour
                         // Stone
                         terrain[x, y, z] = new Voxel(4, 1);
                     }
-                                      
+
                     else if (y > heightAtPoint && y <= 60)
                     {
                         // Water

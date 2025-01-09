@@ -15,7 +15,7 @@ public class ClearSave
 
         if (Directory.Exists(fullPath))
         {
-            DirectoryInfo directory = new DirectoryInfo(fullPath);
+            DirectoryInfo directory = new(fullPath);
 
             // Delete all files in the directory
             foreach (FileInfo file in directory.GetFiles())

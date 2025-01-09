@@ -1,3 +1,5 @@
+using System;
+
 public struct Voxel
 {
     public byte id;
@@ -21,4 +23,6 @@ public struct Voxel
         health -= amount;
         if (health < 0) Destroy();
     }
+
+    public readonly override string ToString() => $"{id}, {type}, {health}";
 }

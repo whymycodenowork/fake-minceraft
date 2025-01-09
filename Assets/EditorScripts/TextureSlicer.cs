@@ -33,7 +33,7 @@ public class TextureSlicer : MonoBehaviour
             // Process only the first 6 frames (16x16 each)
             for (int i = 0; i < 6; i++)
             {
-                Texture2D slicedTexture = new Texture2D(16, 16);
+                Texture2D slicedTexture = new(16, 16);
                 Color[] pixels = originalTexture.GetPixels(i * 16, 0, 16, 16);
                 slicedTexture.SetPixels(pixels);
                 slicedTexture.Apply();

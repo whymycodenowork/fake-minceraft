@@ -1,12 +1,17 @@
+using TMPro;
 using UnityEngine;
-using UnityEngine.SceneManagement; // For scene management if needed
-using UnityEngine.UI; // For UI elements
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class PauseManager : MonoBehaviour
 {
+    public GameObject inventory;
     public GameObject pauseMenuUI; // Reference to the pause menu UI
     public GameObject pauseMain;
     public GameObject pauseSettings;
+    public Slider renderDistanceSlider;
+    public TextMeshProUGUI renderDistanceText;
+    public ChunkPool chunkPool;
     public bool isPaused = false; // Track whether the game is paused
 
     void Start()
@@ -30,6 +35,9 @@ public class PauseManager : MonoBehaviour
                 Pause();
             }
         }
+        int renderDistance = (int)renderDistanceSlider.value;
+        renderDistanceText.text = renderDistance.ToString();
+        chunkPool.viewDistance = renderDistance;
     }
 
     public void Resume()
@@ -50,6 +58,7 @@ public class PauseManager : MonoBehaviour
     {
         Time.timeScale = 1f; // Ensure game time resumes
         // Load the main menu or exit game
+        SaveSystem.SaveAllChunksToDisk();
         SceneManager.LoadScene("Main Menu"); // Adjust scene name as needed
     }
 

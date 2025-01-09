@@ -1,17 +1,14 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayerLook : MonoBehaviour
 {
     public PauseManager pauseManager;
+    public InventoryManager inventoryManager;
     public Vector2 turn;
     public float sensitivity;
     public bool thirdPerson;
     public float cameraOffset;
     public LayerMask collisionLayers; // Layers to check for collisions
-
-    private Vector3 desiredPosition;
 
     void Start()
     {
@@ -20,8 +17,8 @@ public class PlayerLook : MonoBehaviour
 
     void Update()
     {
-        // Lock the cursor if the game isn't paused
-        if (!pauseManager.isPaused)
+        // Lock the cursor if no menus are open
+        if (!(pauseManager.isPaused || inventoryManager.inventoryOpen))
         {
             if (Cursor.lockState != CursorLockMode.Locked)
                 Cursor.lockState = CursorLockMode.Locked;
@@ -37,7 +34,7 @@ public class PlayerLook : MonoBehaviour
             transform.localEulerAngles = new Vector3(0, 0, turn.x);
 
             // Apply horizontal rotation to the parent
-            transform.parent.Rotate(Vector3.up * mouseX * sensitivity, Space.World); // Rotate parent
+            transform.parent.Rotate(mouseX * sensitivity * Vector3.up, Space.World); // Rotate parent
         }
         else
         {

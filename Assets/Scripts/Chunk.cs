@@ -1,8 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using UnityEngine;
-using UnityEditorInternal;
 
 public class Chunk : MonoBehaviour
 {
@@ -32,10 +30,7 @@ public class Chunk : MonoBehaviour
     {
         transform.position = new Vector3(x * 16, 0, y * 16);
 
-        if (voxels == null)
-        {
-            voxels = terrainGenerator.GenerateTerrain(x, y);
-        }
+        voxels ??= terrainGenerator.GenerateTerrain(x, y);
 
         CreateMesh();
     }
@@ -56,13 +51,13 @@ public class Chunk : MonoBehaviour
 
     IEnumerator GenerateMesh()
     {
-        Mesh mesh = new Mesh();
-        List<Vector3> vertices = new List<Vector3>();
-        List<Vector2> uvs = new List<Vector2>();
+        Mesh mesh = new();
+        List<Vector3> vertices = new();
+        List<Vector2> uvs = new();
 
         // Dictionary to store triangle lists for each texture on each face
-        Dictionary<(int, int), List<int>> textureToTriangles = new Dictionary<(int, int), List<int>>();
-        List<Material> meshMaterials = new List<Material>();
+        Dictionary<(int, int), List<int>> textureToTriangles = new();
+        List<Material> meshMaterials = new();
 
         // Initialize the triangle list for each texture and face direction
         for (int id = 0; id < this.materials.GetLength(0); id++)
@@ -125,7 +120,7 @@ public class Chunk : MonoBehaviour
         meshRenderer.materials = meshMaterials.ToArray();
     }
 
-    public void UpdateMeshLocal(int voxelX, int voxelY, int voxelZ)
+    public void UpdateMeshLocal(int voxelX, int voxelZ)
     {
         if (voxelX == 0)
         {
@@ -206,64 +201,61 @@ public class Chunk : MonoBehaviour
     };
 
     // Define face vertices depending on the direction
-    public bool HasMesh()
-    {
-        return meshFilter != null;
-    }
+    public bool HasMesh => meshFilter != null;
 
     private static readonly Vector3[] faceVerticesUp = new Vector3[]
     {
-        new Vector3(-0.5f, 0.5f, -0.5f),
-        new Vector3(0.5f, 0.5f, -0.5f),
-        new Vector3(-0.5f, 0.5f, 0.5f),
-        new Vector3(0.5f, 0.5f, 0.5f)
+        new(-0.5f, 0.5f, -0.5f),
+        new(0.5f, 0.5f, -0.5f),
+        new(-0.5f, 0.5f, 0.5f),
+        new(0.5f, 0.5f, 0.5f)
     };
 
     private static readonly Vector3[] faceVerticesDown = new Vector3[]
     {
-        new Vector3(-0.5f, -0.5f, 0.5f),
-        new Vector3(0.5f, -0.5f, 0.5f),
-        new Vector3(-0.5f, -0.5f, -0.5f),
-        new Vector3(0.5f, -0.5f, -0.5f)
+        new(-0.5f, -0.5f, 0.5f),
+        new(0.5f, -0.5f, 0.5f),
+        new(-0.5f, -0.5f, -0.5f),
+        new(0.5f, -0.5f, -0.5f)
     };
 
     private static readonly Vector3[] faceVerticesRight = new Vector3[]
     {
-        new Vector3(0.5f, 0.5f, 0.5f),
-        new Vector3(0.5f, 0.5f, -0.5f),
-        new Vector3(0.5f, -0.5f, 0.5f),
-        new Vector3(0.5f, -0.5f, -0.5f)
+        new(0.5f, 0.5f, 0.5f),
+        new(0.5f, 0.5f, -0.5f),
+        new(0.5f, -0.5f, 0.5f),
+        new(0.5f, -0.5f, -0.5f)
     };
 
     private static readonly Vector3[] faceVerticesLeft = new Vector3[]
     {
-        new Vector3(-0.5f, 0.5f, -0.5f),
-        new Vector3(-0.5f, 0.5f, 0.5f),
-        new Vector3(-0.5f, -0.5f, -0.5f),
-        new Vector3(-0.5f, -0.5f, 0.5f)
+        new(-0.5f, 0.5f, -0.5f),
+        new(-0.5f, 0.5f, 0.5f),
+        new(-0.5f, -0.5f, -0.5f),
+        new(-0.5f, -0.5f, 0.5f)
     };
 
     private static readonly Vector3[] faceVerticesForward = new Vector3[]
     {
-        new Vector3(-0.5f, 0.5f, 0.5f),
-        new Vector3(0.5f, 0.5f, 0.5f),
-        new Vector3(-0.5f, -0.5f, 0.5f),
-        new Vector3(0.5f, -0.5f, 0.5f)
+        new(-0.5f, 0.5f, 0.5f),
+        new(0.5f, 0.5f, 0.5f),
+        new(-0.5f, -0.5f, 0.5f),
+        new(0.5f, -0.5f, 0.5f)
     };
 
     private static readonly Vector3[] faceVerticesBack = new Vector3[]
     {
-        new Vector3(0.5f, 0.5f, -0.5f),
-        new Vector3(-0.5f, 0.5f, -0.5f),
-        new Vector3(0.5f, -0.5f, -0.5f),
-        new Vector3(-0.5f, -0.5f, -0.5f)
+        new(0.5f, 0.5f, -0.5f),
+        new(-0.5f, 0.5f, -0.5f),
+        new(0.5f, -0.5f, -0.5f),
+        new(-0.5f, -0.5f, -0.5f)
     };
 
     private static readonly Vector2[] faceUVs = new Vector2[]
     {
-        new Vector2(0, 1),
-        new Vector2(1, 1),
-        new Vector2(0, 0),
-        new Vector2(1, 0)
+        new(0, 1),
+        new(1, 1),
+        new(0, 0),
+        new(1, 0)
     };
 }
