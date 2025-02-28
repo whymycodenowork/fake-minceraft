@@ -4099,7 +4099,7 @@ MonoBehaviour:
   MainCamera: {fileID: 963194228}
   pauseManager: {fileID: 380199903}
   inventoryManager: {fileID: 2009666713}
-  baseMovementSpeed: 0.1
+  baseMovementSpeed: 0.2
   movementSpeed: 1
   jumpHeight: 1
   indicatorBox: {fileID: 897561090}

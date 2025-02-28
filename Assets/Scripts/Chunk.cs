@@ -18,9 +18,7 @@ public class Chunk : MonoBehaviour
     public MeshCollider meshCollider;
     public MeshRenderer meshRenderer;
 
-    private const int _atlasSize = 0;
-
-    void Start()
+    void Awake()
     {
         meshFilter = GetComponent<MeshFilter>();
         meshCollider = GetComponent<MeshCollider>();
@@ -40,6 +38,7 @@ public class Chunk : MonoBehaviour
     public void CreateMesh()
     {
         isDirty = true;
+        meshFilter.sharedMesh = null;
     }
 
     void Update()
@@ -202,9 +201,9 @@ public class Chunk : MonoBehaviour
         Vector3.down
     };
 
-    // Define face vertices depending on the direction
     public bool HasMesh => meshFilter != null;
 
+    // Define face vertices depending on the direction
     private static readonly Vector3[] faceVerticesUp = new Vector3[]
     {
         new(-0.5f, 0.5f, -0.5f),

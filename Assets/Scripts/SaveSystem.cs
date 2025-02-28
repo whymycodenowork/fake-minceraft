@@ -13,7 +13,6 @@ public static class SaveSystem
     {
         if (voxels == null)
         {
-            Debug.LogWarning("voxels is null!");
             return;
         }
 
