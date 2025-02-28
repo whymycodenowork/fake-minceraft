@@ -12,10 +12,9 @@ public class Player : MonoBehaviour
     private bool isGrounded;
     private Vector3 currentVelocity = Vector3.zero;
     private const int chunkSize = 16;
-    private GameObject indicatorBox;
+    public GameObject indicatorBox;
     public LayerMask groundLayer;
     public float selectDistance = 5;
-    public GameObject boxPrefab;
     public ChunkPool chunkPool;
     public bool canFly;
     public Voxel selectedBlock = new(6, 1);
@@ -23,17 +22,6 @@ public class Player : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        // Instantiate the indicator box once and disable it initially
-        indicatorBox = Instantiate(boxPrefab);
-        indicatorBox.transform.localScale = new Vector3(1.05f, 1.05f, 1.05f);
-
-        // Set the box's material color to translucent white
-        if (indicatorBox.TryGetComponent<Renderer>(out var boxRenderer))
-        {
-            Color translucentWhite = new(1f, 1f, 1f, 0.5f);
-            boxRenderer.material.color = translucentWhite;
-        }
-
         // Disable the box at start
         indicatorBox.SetActive(false);
     }

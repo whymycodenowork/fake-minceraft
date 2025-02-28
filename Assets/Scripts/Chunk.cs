@@ -18,6 +18,8 @@ public class Chunk : MonoBehaviour
     public MeshCollider meshCollider;
     public MeshRenderer meshRenderer;
 
+    private const int _atlasSize = 0;
+
     void Start()
     {
         meshFilter = GetComponent<MeshFilter>();

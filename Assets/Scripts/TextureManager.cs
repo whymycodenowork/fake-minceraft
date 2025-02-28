@@ -10,12 +10,6 @@ public static class TextureManager
     // Static constructor (runs once when the class is first accessed)
     static TextureManager()
     {
-        InitializeTextures();
-    }
-
-    // Static method to initialize materials
-    private static void InitializeTextures()
-    {
         int amountOfImages = Directory.GetFiles("Assets/Images", "*.png").Length;
 
         materials = new Material[amountOfImages, 6];
@@ -48,5 +42,5 @@ public static class TextureManager
         {
             itemTextures[id] = Resources.Load<Texture2D>($"ItemImages/{id}");
         }
-    }
+    } 
 }
