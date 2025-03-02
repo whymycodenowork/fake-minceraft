@@ -14,19 +14,13 @@ public class ChunkPool : MonoBehaviour
     public Dictionary<Vector2Int, GameObject> activeChunks = new();
     private readonly Queue<GameObject> chunkPool = new();
 
-    async void Update()
-    {
-        await UpdateChunks();
-    }
-
-    async Task UpdateChunks()
+    void Update()
     {
         // Calculate player chunk position
         Vector2 playerChunkPosition = new(player.position.x / chunkSize, player.position.z / chunkSize);
         Vector2Int playerChunkCoord = new(Mathf.FloorToInt(playerChunkPosition.x), Mathf.FloorToInt(playerChunkPosition.y));
 
         // Load chunks around the player
-        List<Task> loadingTasks = new();
         for (int x = -viewDistance + playerChunkCoord.x; x <= viewDistance + playerChunkCoord.x; x++)
         {
             for (int y = -viewDistance + playerChunkCoord.y; y <= viewDistance + playerChunkCoord.y; y++)
@@ -38,20 +32,17 @@ public class ChunkPool : MonoBehaviour
                     if (Vector2Int.Distance(chunkCoord, playerChunkCoord) <= viewDistance)
                     {
                         // Start loading chunk asynchronously
-                        loadingTasks.Add(LoadChunkAsync(chunkCoord));
+                        LoadChunk(chunkCoord);
                     }
                 }
             }
         }
 
-        // Wait for all loading tasks to complete
-        await Task.WhenAll(loadingTasks);
-
         // Unload distant chunks
         UnloadDistantChunks(playerChunkCoord);
     }
 
-    async Task LoadChunkAsync(Vector2Int coord)
+    Task LoadChunk(Vector2Int coord)
     {
         GameObject chunk;
 
@@ -74,7 +65,7 @@ public class ChunkPool : MonoBehaviour
 
         if (File.Exists(filePath))
         {
-            await Task.Run(() => chunkScript.LoadData(coord)); // Load data asynchronously
+            chunkScript.LoadData(coord); // Load data asynchronously
         }
         else
         {
@@ -98,6 +89,7 @@ public class ChunkPool : MonoBehaviour
         }
         chunkScript.meshFilter.sharedMesh = null;
         chunk.SetActive(true);
+        return Task.CompletedTask;
     }
 
     void UnloadChunk(Vector2Int coord)
