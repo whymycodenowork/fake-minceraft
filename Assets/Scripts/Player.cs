@@ -29,17 +29,17 @@ public class Player : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (pauseManager.isPaused || inventoryManager.inventoryOpen) return; // Don't do anything if a menu is open
+        Vector3 targetVelocity = Vector3.SmoothDamp(MyRigidbody.linearVelocity, Vector3.zero, ref currentVelocity, 0.2f);
+        MyRigidbody.linearVelocity = new Vector3(targetVelocity.x, MyRigidbody.linearVelocity.y, targetVelocity.z);
+        if (pauseManager.isPaused || inventoryManager.inventoryOpen) return; // Disable movement and other interactions if a menu is open
         Item selectedItem = inventoryManager.hotbarItems[(int)Mathf.Round(inventoryManager.hotbarSlot)];
-        if (selectedItem is AirItem) selectedBlock = new Voxel(0, 0);
+        if (selectedItem is Nothing) selectedBlock = new Voxel(0, 0);
         if (selectedItem is BlockItem blockItem)
         {
             selectedBlock = blockItem.BlockToPlace;
         }
         MovePlayer();
-        Vector3 targetVelocity = Vector3.SmoothDamp(MyRigidbody.linearVelocity, Vector3.zero, ref currentVelocity, 0.2f);
-        MyRigidbody.linearVelocity = new Vector3(targetVelocity.x, MyRigidbody.linearVelocity.y, targetVelocity.z);
-
+        
         if (Input.GetKeyDown(KeyCode.R))
         {
             MyRigidbody.linearVelocity = Vector3.zero;
@@ -52,7 +52,7 @@ public class Player : MonoBehaviour
             else HandleJump();
         }
 
-        if (Input.GetKey(KeyCode.LeftShift))
+        if (Input.GetKey(KeyCode.LeftShift) && canFly)
         {
             HandleFly("down");
         }

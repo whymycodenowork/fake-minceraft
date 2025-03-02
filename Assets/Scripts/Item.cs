@@ -22,7 +22,7 @@ namespace Items
                 return item; // Return the excess
             }
             amount = newAmount;
-            return new AirItem();
+            return new Nothing();
         }
 
         // Must return itself or another item
@@ -37,7 +37,7 @@ namespace Items
     }
 
     // Class for no items
-    public sealed class AirItem : Item
+    public sealed class Nothing : Item
     {
         public override string Name => "";
         public override string ToolTip => "";
@@ -54,7 +54,7 @@ namespace Items
         public override Item UseRight()
         {
             amount--;
-            if (amount == 0) return new AirItem();
+            if (amount == 0) return new Nothing();
             return this;
         }
     }

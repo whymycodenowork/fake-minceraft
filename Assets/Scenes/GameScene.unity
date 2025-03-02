@@ -2434,7 +2434,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!65 &897561091
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -4099,9 +4099,9 @@ MonoBehaviour:
   MainCamera: {fileID: 963194228}
   pauseManager: {fileID: 380199903}
   inventoryManager: {fileID: 2009666713}
-  baseMovementSpeed: 0.2
+  baseMovementSpeed: 0.1
   movementSpeed: 1
-  jumpHeight: 1
+  jumpHeight: 4.5
   indicatorBox: {fileID: 897561090}
   groundLayer:
     serializedVersion: 2
@@ -4135,7 +4135,7 @@ Rigidbody:
   m_IsKinematic: 0
   m_Interpolate: 0
   m_Constraints: 112
-  m_CollisionDetection: 0
+  m_CollisionDetection: 2
 --- !u!136 &1393407527
 CapsuleCollider:
   m_ObjectHideFlags: 0

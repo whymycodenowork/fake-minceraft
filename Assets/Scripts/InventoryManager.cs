@@ -36,7 +36,7 @@ public class InventoryManager : MonoBehaviour
         }
         for (int j = 0; j < inventorySlotsList.Count; j++)
         {
-            inventoryItems.Add(new AirItem());
+            inventoryItems.Add(new Nothing());
         }
         hotbarItems = new Item[9]
         {
@@ -48,7 +48,7 @@ public class InventoryManager : MonoBehaviour
             new Dirt(),
             new Grass(),
             new WoodPlanks(),
-            new AirItem(),
+            new Nothing(),
         };
     }
     private void Start()
