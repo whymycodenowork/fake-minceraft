@@ -126,22 +126,22 @@ public class Chunk : MonoBehaviour
         if (voxelX == 0)
         {
             // Update chunk on the left
-            chunkPool.activeChunks[new Vector2Int(x - 1, y)].GetComponent<Chunk>().CreateMesh();
+            chunkPool.activeChunks[new Vector2Int(x - 1, y)].GetComponent<Chunk>().isDirty = true;
         }
         if (voxelX == 15)
         {
             // Update chunk on the right
-            chunkPool.activeChunks[new Vector2Int(x + 1, y)].GetComponent<Chunk>().CreateMesh();
+            chunkPool.activeChunks[new Vector2Int(x + 1, y)].GetComponent<Chunk>().isDirty = true;
         }
         if (voxelZ == 0)
         {
             // Update chunk below
-            chunkPool.activeChunks[new Vector2Int(x, y - 1)].GetComponent<Chunk>().CreateMesh();
+            chunkPool.activeChunks[new Vector2Int(x, y - 1)].GetComponent<Chunk>().isDirty = true;
         }
         if (voxelZ == 15)
         {
             // Update chunk above
-            chunkPool.activeChunks[new Vector2Int(x, y + 1)].GetComponent<Chunk>().CreateMesh();
+            chunkPool.activeChunks[new Vector2Int(x, y + 1)].GetComponent<Chunk>().isDirty = true;
         }
         isDirty = true; // Add local mesh logic later
     }
