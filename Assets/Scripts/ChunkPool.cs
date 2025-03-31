@@ -17,12 +17,12 @@ public class ChunkPool : MonoBehaviour
 
     void Update()
     {
-        Vector2Int playerChunkCoord = GetPlayerChunkCoord();
+        var playerChunkCoord = GetPlayerChunkCoord();
 
         // Load chunks asynchronously
-        for (int x = -viewDistance + playerChunkCoord.x; x <= viewDistance + playerChunkCoord.x; x++)
+        for (var x = -viewDistance + playerChunkCoord.x; x <= viewDistance + playerChunkCoord.x; x++)
         {
-            for (int y = -viewDistance + playerChunkCoord.y; y <= viewDistance + playerChunkCoord.y; y++)
+            for (var y = -viewDistance + playerChunkCoord.y; y <= viewDistance + playerChunkCoord.y; y++)
             {
                 Vector2Int chunkCoord = new(x, y);
                 if (!activeChunks.ContainsKey(chunkCoord))
@@ -55,12 +55,12 @@ public class ChunkPool : MonoBehaviour
             chunk.SetActive(false);
         }
 
-        Chunk chunkScript = chunk.GetComponent<Chunk>();
+        var chunkScript = chunk.GetComponent<Chunk>();
         chunkScript.x = coord.x;
         chunkScript.y = coord.y;
         activeChunks[coord] = chunk;
 
-        string filePath = $"Assets/SaveData/SaveFile{saveFile}/chunk_{coord.x}_{coord.y}.dat";
+        var filePath = $"Assets/SaveData/SaveFile{saveFile}/chunk_{coord.x}_{coord.y}.dat";
 
         if (File.Exists(filePath))
         {
@@ -94,7 +94,7 @@ public class ChunkPool : MonoBehaviour
 
         foreach (var neighbor in neighbors)
         {
-            if (activeChunks.TryGetValue(neighbor, out GameObject neighborChunk))
+            if (activeChunks.TryGetValue(neighbor, out var neighborChunk))
             {
                 neighborChunk.GetComponent<Chunk>().CreateMesh();
             }
@@ -103,9 +103,9 @@ public class ChunkPool : MonoBehaviour
 
     async Task UnloadChunkAsync(Vector2Int coord)
     {
-        if (!activeChunks.TryGetValue(coord, out GameObject chunk)) return;
+        if (!activeChunks.TryGetValue(coord, out var chunk)) return;
 
-        Voxel[,,] chunkVoxels = chunk.GetComponent<Chunk>().voxels;
+        var chunkVoxels = chunk.GetComponent<Chunk>().voxels;
 
         // Save chunk data asynchronously
         await Task.Run(() => SaveSystem.SaveChunk(coord, chunkVoxels));
@@ -124,8 +124,8 @@ public class ChunkPool : MonoBehaviour
         chunksToUnload.Clear();
         foreach (var chunk in activeChunks)
         {
-            int xDist = Mathf.Abs(chunk.Key.x - playerChunkCoord.x);
-            int yDist = Mathf.Abs(chunk.Key.y - playerChunkCoord.y);
+            var xDist = Mathf.Abs(chunk.Key.x - playerChunkCoord.x);
+            var yDist = Mathf.Abs(chunk.Key.y - playerChunkCoord.y);
 
             if (xDist > viewDistance || yDist > viewDistance)
             {

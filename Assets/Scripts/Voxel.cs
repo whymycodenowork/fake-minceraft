@@ -23,7 +23,7 @@ public struct Voxel
 
     public void DealDamage(float amount)
     {
-        float actualAmount = amount;
+        var actualAmount = amount;
         actualAmount /= defence;
         health -= actualAmount;
         if (health <= 0) Destroy();

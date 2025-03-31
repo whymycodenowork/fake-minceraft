@@ -10,16 +10,16 @@ public static class TextureManager
     // Static constructor (runs once when the class is first accessed)
     static TextureManager()
     {
-        int amountOfImages = Directory.GetFiles("Assets/Images", "*.png").Length;
+        var amountOfImages = Directory.GetFiles("Assets/Images", "*.png").Length;
 
         materials = new Material[amountOfImages, 6];
         blockItemTextures = new Texture2D[amountOfImages, 6];
 
-        for (int id = 0; id < amountOfImages; id++)
+        for (var id = 0; id < amountOfImages; id++)
         {
-            for (int direction = 0; direction < 6; direction++)
+            for (var direction = 0; direction < 6; direction++)
             {
-                Texture2D texture = Resources.Load<Texture2D>($"Textures/{id},{direction}");
+                var texture = Resources.Load<Texture2D>($"Textures/{id},{direction}");
                 if (texture != null)
                 {
                     blockItemTextures[id, direction] = texture;
@@ -38,7 +38,7 @@ public static class TextureManager
         amountOfImages = Directory.GetFiles("Assets/Resources/ItemImages", "*.png").Length;
 
         itemTextures = new Texture2D[amountOfImages];
-        for (int id = 0; id < amountOfImages; id++)
+        for (var id = 0; id < amountOfImages; id++)
         {
             itemTextures[id] = Resources.Load<Texture2D>($"ItemImages/{id}");
         }

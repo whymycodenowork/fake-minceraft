@@ -28,13 +28,13 @@ public class InventoryManager : MonoBehaviour
 
     private void Awake()
     {
-        Transform[] inventorySlotsTransform = inventorySlots.GetComponentsInChildren<Transform>(true);
-        for (int i = 0; i < inventorySlotsTransform.Length; i++)
+        var inventorySlotsTransform = inventorySlots.GetComponentsInChildren<Transform>(true);
+        for (var i = 0; i < inventorySlotsTransform.Length; i++)
         {
             if (inventorySlotsTransform[i] == inventorySlots.transform) continue;
             inventorySlotsList.Add(inventorySlotsTransform[i].gameObject);
         }
-        for (int j = 0; j < inventorySlotsList.Count; j++)
+        for (var j = 0; j < inventorySlotsList.Count; j++)
         {
             inventoryItems.Add(new Nothing());
         }
@@ -61,7 +61,7 @@ public class InventoryManager : MonoBehaviour
         {
             inventoryOpen = false;
             crosshair.SetActive(true);
-            float scroll = Input.GetAxis("Mouse ScrollWheel");
+            var scroll = Input.GetAxis("Mouse ScrollWheel");
 
             if (scroll > 0f)
             {
@@ -90,11 +90,11 @@ public class InventoryManager : MonoBehaviour
     void UpdateHotbarUI()
     {
         // Loop through each slot and apply the color and image
-        for (int i = 0; i < hotbarSlots.Length; i++)
+        for (var i = 0; i < hotbarSlots.Length; i++)
         {
-            GameObject currentHotbarSlot = hotbarSlots[i];
+            var currentHotbarSlot = hotbarSlots[i];
             currentHotbarSlot.GetComponent<Image>().color = (i == Math.Round(hotbarSlot)) ? selectedColor : defaultColor;
-            RawImage currentHotbarImage = currentHotbarSlot.transform.GetChild(0).GetComponent<RawImage>();
+            var currentHotbarImage = currentHotbarSlot.transform.GetChild(0).GetComponent<RawImage>();
             if (hotbarItems[i] is BlockItem blockItem)
             {
                 currentHotbarImage.texture = TextureManager.blockItemTextures[blockItem.BlockToPlace.id, 0];
@@ -130,7 +130,7 @@ public class InventoryManager : MonoBehaviour
 
     public void ClickInventorySlot(byte slotNumber)
     {
-        Item item = inventoryItems[slotNumber];
+        var item = inventoryItems[slotNumber];
 
         if (selectedItem.GetType() == item.GetType())
         {
@@ -138,7 +138,7 @@ public class InventoryManager : MonoBehaviour
         }
         else // Swap if not the same type
         {
-            Item temp = selectedItem;
+            var temp = selectedItem;
             selectedItem = item;
             inventoryItems[slotNumber] = temp;
         }

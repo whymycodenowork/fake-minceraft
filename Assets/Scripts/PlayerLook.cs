@@ -24,8 +24,8 @@ public class PlayerLook : MonoBehaviour
                 Cursor.lockState = CursorLockMode.Locked;
 
             // Capture mouse input
-            float mouseX = Input.GetAxis("Mouse X");
-            float mouseY = Input.GetAxis("Mouse Y");
+            var mouseX = Input.GetAxis("Mouse X");
+            var mouseY = Input.GetAxis("Mouse Y");
 
             turn.x += mouseY * sensitivity;
             turn.x = Mathf.Clamp(turn.x, -80, 80); // Prevent excessive tilt

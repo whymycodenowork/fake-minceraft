@@ -12,11 +12,11 @@ namespace Items
         // Method for combining two stacks
         public virtual Item Add(Item item)
         {
-            int newAmount = amount + item.amount;
+            var newAmount = amount + item.amount;
 
             if (newAmount > MaxStackSize)
             {
-                int excess = newAmount - MaxStackSize;
+                var excess = newAmount - MaxStackSize;
                 amount = MaxStackSize;
                 item.amount = excess;
                 return item; // Return the excess

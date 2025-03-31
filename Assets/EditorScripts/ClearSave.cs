@@ -11,20 +11,20 @@ public class ClearSave
     [MenuItem("Tools/Clear Save Data")]
     private static void ClearFolder()
     {
-        string fullPath = folderPath;
+        var fullPath = folderPath;
 
         if (Directory.Exists(fullPath))
         {
             DirectoryInfo directory = new(fullPath);
 
             // Delete all files in the directory
-            foreach (FileInfo file in directory.GetFiles())
+            foreach (var file in directory.GetFiles())
             {
                 file.Delete();
             }
 
             // Delete all subdirectories
-            foreach (DirectoryInfo subDirectory in directory.GetDirectories())
+            foreach (var subDirectory in directory.GetDirectories())
             {
                 subDirectory.Delete(true);
             }

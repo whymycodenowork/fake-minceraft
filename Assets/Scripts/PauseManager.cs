@@ -35,7 +35,7 @@ public class PauseManager : MonoBehaviour
                 Pause();
             }
         }
-        int renderDistance = (int)renderDistanceSlider.value;
+        var renderDistance = (int)renderDistanceSlider.value;
         renderDistanceText.text = renderDistance.ToString();
         chunkPool.viewDistance = renderDistance;
     }

@@ -29,10 +29,10 @@ public class Player : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        Vector3 targetVelocity = Vector3.SmoothDamp(MyRigidbody.linearVelocity, Vector3.zero, ref currentVelocity, 0.2f);
+        var targetVelocity = Vector3.SmoothDamp(MyRigidbody.linearVelocity, Vector3.zero, ref currentVelocity, 0.2f);
         MyRigidbody.linearVelocity = new Vector3(targetVelocity.x, MyRigidbody.linearVelocity.y, targetVelocity.z);
         if (pauseManager.isPaused || inventoryManager.inventoryOpen) return; // Disable movement and other interactions if a menu is open
-        Item selectedItem = inventoryManager.hotbarItems[(int)Mathf.Round(inventoryManager.hotbarSlot)];
+        var selectedItem = inventoryManager.hotbarItems[(int)Mathf.Round(inventoryManager.hotbarSlot)];
         if (selectedItem is Nothing) selectedBlock = new Voxel(0, 0);
         if (selectedItem is BlockItem blockItem)
         {
@@ -83,7 +83,7 @@ public class Player : MonoBehaviour
 
     void MovePlayer()
     {
-        Vector3 movementDirection = Vector3.zero;
+        var movementDirection = Vector3.zero;
 
         if (Input.GetKey(KeyCode.W))
         {
@@ -121,7 +121,7 @@ public class Player : MonoBehaviour
         isGrounded = Physics.Raycast(transform.position, Vector3.down, 1.01f, groundLayer);
         if (isGrounded)
         {
-            Vector3 velocity = MyRigidbody.linearVelocity;
+            var velocity = MyRigidbody.linearVelocity;
             MyRigidbody.linearVelocity = new Vector3(velocity.x, jumpHeight, velocity.z);
         }
     }
@@ -141,7 +141,7 @@ public class Player : MonoBehaviour
     void DetectInteractions()
     {
         Ray ray = new(MainCamera.transform.position, MainCamera.forward);
-        if (Physics.Raycast(ray, out RaycastHit hit, selectDistance, groundLayer))
+        if (Physics.Raycast(ray, out var hit, selectDistance, groundLayer))
         {
             // Get the hit location and adjust based on hit normal to avoid incorrect rounding
             Vector3 hitPointAdjusted;
@@ -189,19 +189,19 @@ public class Player : MonoBehaviour
 
     void Interact(int mouseButton, Vector3Int position)
     {
-        Vector2Int chunkCoords = GetChunkPosition(position, out Vector3 localPosition);
+        var chunkCoords = GetChunkPosition(position, out var localPosition);
 
         // Ensure the position is within chunk bounds before interacting
-        if (chunkPool.activeChunks.TryGetValue(chunkCoords, out GameObject hitChunk))
+        if (chunkPool.activeChunks.TryGetValue(chunkCoords, out var hitChunk))
         {
-            Chunk chunkScript = hitChunk.GetComponent<Chunk>();
-            Voxel[,,] chunkVoxels = chunkScript.voxels;
+            var chunkScript = hitChunk.GetComponent<Chunk>();
+            var chunkVoxels = chunkScript.voxels;
 
             switch (mouseButton)
             {
                 case 0: // Left-click: Remove voxel
 
-                    Voxel voxel = chunkVoxels[(int)localPosition.x, (int)localPosition.y, (int)localPosition.z];
+                    var voxel = chunkVoxels[(int)localPosition.x, (int)localPosition.y, (int)localPosition.z];
                     if (voxel.type == 0) break;
                     // Debug.Log($"Deleted {voxel}");
                     chunkVoxels[(int)localPosition.x, (int)localPosition.y, (int)localPosition.z].type = 0;
@@ -223,12 +223,12 @@ public class Player : MonoBehaviour
     Vector2Int GetChunkPosition(Vector3 location, out Vector3 localPosition)
     {
         // Calculate chunk coordinates
-        int chunkX = Mathf.FloorToInt(location.x / chunkSize);
-        int chunkZ = Mathf.FloorToInt(location.z / chunkSize);
+        var chunkX = Mathf.FloorToInt(location.x / chunkSize);
+        var chunkZ = Mathf.FloorToInt(location.z / chunkSize);
 
         // Calculate local position within the chunk
-        float localX = location.x % chunkSize;
-        float localZ = location.z % chunkSize;
+        var localX = location.x % chunkSize;
+        var localZ = location.z % chunkSize;
 
         // Ensure the local position is positive
         if (localX < 0) localX += chunkSize;

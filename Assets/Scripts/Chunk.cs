@@ -8,7 +8,7 @@ public class Chunk : MonoBehaviour
     public TerrainGenerator terrainGenerator;
     public ChunkPool chunkPool;
 
-    public Material[,] materials;
+    private Material[,] _materials;
 
     public int x;
     public int y;
@@ -18,15 +18,15 @@ public class Chunk : MonoBehaviour
     public MeshCollider meshCollider;
     public MeshRenderer meshRenderer;
 
-    void Awake()
+    private void Awake()
     {
         meshFilter = GetComponent<MeshFilter>();
         meshCollider = GetComponent<MeshCollider>();
         meshRenderer = GetComponent<MeshRenderer>();
-        materials = TextureManager.materials;
+        _materials = TextureManager.materials;
     }
 
-    void OnEnable()
+    private void OnEnable()
     {
         transform.position = new Vector3(x * 16, 0, y * 16);
 
@@ -50,7 +50,8 @@ public class Chunk : MonoBehaviour
         }
     }
 
-    IEnumerator GenerateMesh()
+    // ReSharper disable Unity.PerformanceAnalysis
+    private IEnumerator GenerateMesh()
     {
         Mesh mesh = new();
         List<Vector3> vertices = new();
@@ -61,32 +62,33 @@ public class Chunk : MonoBehaviour
         List<Material> meshMaterials = new();
 
         // Initialize the triangle list for each texture and face direction
-        for (int id = 0; id < this.materials.GetLength(0); id++)
+        for (var id = 0; id < _materials.GetLength(0); id++)
         {
-            for (int direction = 0; direction < 6; direction++) // 6 faces per voxel
+            for (var direction = 0; direction < 6; direction++) // 6 faces per voxel
             {
                 textureToTriangles[(id, direction)] = new List<int>();
             }
         }
 
-        for (int x = 0; x < 16; x++)
+        for (var chunkX = 0; chunkX < 16; chunkX++)
         {
-            for (int y = 0; y < 255; y++)
+            for (var chunkY = 0; chunkY < 255; chunkY++)
             {
-                for (int z = 0; z < 16; z++)
+                for (var chunkZ = 0; chunkZ < 16; chunkZ++)
                 {
-                    Voxel voxel = voxels[x, y, z];
+                    var voxel = voxels[chunkX, chunkY, chunkZ];
                     if (voxel.type == 0) continue; // Skip empty voxel
                     // Assign faces to corresponding texture groups
 
-                    for (int i = 0; i < 6; i++) // Loop through each face direction
+                    for (var i = 0; i < 6; i++) // Loop through each face direction
                     {
-                        Vector3 direction = indexToDirection[i];
-                        AddFaceIfNeeded(vertices, textureToTriangles[(voxel.id, i)], uvs, new Vector3(x, y, z), direction);
+                        var direction = indexToDirection[i];
+                        AddFaceIfNeeded(vertices, textureToTriangles[(voxel.id, i)], uvs,
+                            new Vector3(chunkX, chunkY, chunkZ), direction);
                     }
                 }
             }
-            if (x % 2 == 0) yield return null;
+            if (chunkX % 2 == 0) yield return null;
         }
 
         // Finalize the mesh data
@@ -95,7 +97,7 @@ public class Chunk : MonoBehaviour
         mesh.subMeshCount = textureToTriangles.Count;
 
         // Assign triangles for each face texture
-        int submeshIndex = 0;
+        var submeshIndex = 0;
         foreach (var triangles in textureToTriangles.Values)
         {
             mesh.SetTriangles(triangles, submeshIndex++);
@@ -110,11 +112,11 @@ public class Chunk : MonoBehaviour
         meshCollider.sharedMesh = mesh;
 
         // Assign materials based on the face textures
-        for (int type = 0; type < materials.GetLength(0); type++)
+        for (var type = 0; type < _materials.GetLength(0); type++)
         {
-            for (int direction = 0; direction < 6; direction++) // 6 faces per voxel
+            for (var direction = 0; direction < 6; direction++) // 6 faces per voxel
             {
-                meshMaterials.Add(materials[type, direction]);
+                meshMaterials.Add(_materials[type, direction]);
             }
         }
         // Apply the materials to the mesh renderer
@@ -165,7 +167,7 @@ public class Chunk : MonoBehaviour
 
     void AddFace(List<Vector3> vertices, List<int> triangles, List<Vector2> uvs, Vector3 position, Vector3 direction)
     {
-        Vector3[] faceVertices = direction switch
+        var faceVertices = direction switch
         {
             { } d when d == Vector3.up => faceVerticesUp,
             { } d when d == Vector3.down => faceVerticesDown,
@@ -175,9 +177,9 @@ public class Chunk : MonoBehaviour
             _ => faceVerticesBack,
         };
 
-        int vertexCount = vertices.Count;
+        var vertexCount = vertices.Count;
 
-        for (int i = 0; i < 4; i++)
+        for (var i = 0; i < 4; i++)
         {
             vertices.Add(position + faceVertices[i]);
             uvs.Add(faceUVs[i]);

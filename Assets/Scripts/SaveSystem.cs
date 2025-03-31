@@ -21,11 +21,11 @@ public static class SaveSystem
             using (BinaryWriter writer = new(stream))
             {
                 // Write voxel data
-                for (int i = 0; i < 16; i++)
+                for (var i = 0; i < 16; i++)
                 {
-                    for (int j = 0; j < 255; j++)
+                    for (var j = 0; j < 255; j++)
                     {
-                        for (int k = 0; k < 16; k++)
+                        for (var k = 0; k < 16; k++)
                         {
                             writer.Write(voxels[i, j, k].id);
                             writer.Write(voxels[i, j, k].type);
@@ -47,14 +47,14 @@ public static class SaveSystem
                 voxels = new Voxel[16, 255, 16];
 
                 // Read voxel data
-                for (int i = 0; i < 16; i++)
+                for (var i = 0; i < 16; i++)
                 {
-                    for (int j = 0; j < 255; j++)
+                    for (var j = 0; j < 255; j++)
                     {
-                        for (int k = 0; k < 16; k++)
+                        for (var k = 0; k < 16; k++)
                         {
-                            byte id = reader.ReadByte();
-                            byte type = reader.ReadByte();
+                            var id = reader.ReadByte();
+                            var type = reader.ReadByte();
                             voxels[i, j, k] = new Voxel(id, type);
                         }
                     }
@@ -104,7 +104,7 @@ public static class SaveSystem
     {
         foreach (var kvp in ChunkCache)
         {
-            string path = $"Assets/SaveData/SaveFile{1}/chunk_{kvp.Key.x}_{kvp.Key.y}.dat";
+            var path = $"Assets/SaveData/SaveFile{1}/chunk_{kvp.Key.x}_{kvp.Key.y}.dat";
             SaveChunkToDisk(path, kvp.Value);
         }
         ChunkCache.Clear();
