@@ -12,7 +12,7 @@ public class PauseManager : MonoBehaviour
     public Slider renderDistanceSlider;
     public TextMeshProUGUI renderDistanceText;
     public ChunkPool chunkPool;
-    public bool isPaused = false; // Track whether the game is paused
+    public bool isPaused; // Track whether the game is paused
 
     void Start()
     {

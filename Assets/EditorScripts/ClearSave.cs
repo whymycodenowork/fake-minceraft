@@ -1,7 +1,7 @@
 #if UNITY_EDITOR
+using System.IO;
 using UnityEditor;
 using UnityEngine;
-using System.IO;
 
 public class ClearSave
 {

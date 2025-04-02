@@ -1,33 +1,31 @@
-using System.Collections.Generic;
-
 public struct Voxel
 {
-    public byte id;
-    public byte type;
-    public float health;
-    public float defence;
+    public byte ID;
+    public byte Type;
+    public float Health;
+    public float Defence;
 
     public Voxel(byte id = 0, byte type = 0, float defence = 0f)
     {
-        this.id = id;
-        this.type = type;
-        this.health = 100;
-        this.defence = defence;
+        this.ID = id;
+        this.Type = type;
+        Health = 100;
+        this.Defence = defence;
     }
     public void Destroy()
     {
         // Set itself to air
-        id = 0;
-        type = 0;
+        ID = 0;
+        Type = 0;
     }
 
     public void DealDamage(float amount)
     {
         var actualAmount = amount;
-        actualAmount /= defence;
-        health -= actualAmount;
-        if (health <= 0) Destroy();
+        actualAmount /= Defence;
+        Health -= actualAmount;
+        if (Health <= 0) Destroy();
     }
 
-    public readonly override string ToString() => $"{id}, {type}, {health}";
+    public readonly override string ToString() => $"{ID}, {Type}, {Health}";
 }

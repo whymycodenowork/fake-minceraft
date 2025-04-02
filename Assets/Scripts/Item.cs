@@ -7,21 +7,21 @@ namespace Items
         public abstract string ToolTip { get; }
         public virtual int MaxStackSize { get => 64; }
         public abstract byte TextureID { get; }
-        public int amount;
+        public int Amount;
 
         // Method for combining two stacks
         public virtual Item Add(Item item)
         {
-            var newAmount = amount + item.amount;
+            var newAmount = Amount + item.Amount;
 
             if (newAmount > MaxStackSize)
             {
                 var excess = newAmount - MaxStackSize;
-                amount = MaxStackSize;
-                item.amount = excess;
+                Amount = MaxStackSize;
+                item.Amount = excess;
                 return item; // Return the excess
             }
-            amount = newAmount;
+            Amount = newAmount;
             return new Nothing();
         }
 
@@ -53,8 +53,8 @@ namespace Items
 
         public override Item UseRight()
         {
-            amount--;
-            if (amount == 0) return new Nothing();
+            Amount--;
+            if (Amount == 0) return new Nothing();
             return this;
         }
     }
@@ -70,11 +70,11 @@ namespace Items
         public abstract byte ToolType { get; }
         public abstract int MaxDurability { get; }
 
-        public int durability;
+        public int Durability;
 
         public override Item UseLeft()
         {
-            durability--;
+            Durability--;
             return this;
         }
     }

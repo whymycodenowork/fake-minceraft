@@ -6,7 +6,6 @@ public class TerrainGenerator : MonoBehaviour
     public Vector2 offset;
     public float zoom;
 
-    public int heightOffset2;
     public Vector2 offset2;
     public float zoom2;
     public float heightMultiplier;

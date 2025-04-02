@@ -1,10 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 
 public class Chunk : MonoBehaviour
 {
-    public Voxel[,,] voxels = null;
+    public Voxel[,,] Voxels;
     public TerrainGenerator terrainGenerator;
     public ChunkPool chunkPool;
 
@@ -30,24 +31,17 @@ public class Chunk : MonoBehaviour
     {
         transform.position = new Vector3(x * 16, 0, y * 16);
 
-        voxels ??= terrainGenerator.GenerateTerrain(x, y);
-
-        CreateMesh();
-    }
-
-    public void CreateMesh()
-    {
+        Voxels ??= terrainGenerator.GenerateTerrain(x, y);
+        
         isDirty = true;
-        meshFilter.sharedMesh = null;
     }
 
-    void Update()
+    private void Update()
     {
-        if (isDirty)
-        {
-            StartCoroutine(GenerateMesh());
-            isDirty = false;
-        }
+        if (Voxels == null) Debug.LogWarning("ahhhhhhhhhhhhhhhhhhhhhhhh 2");
+        if (!isDirty) return;
+        StartCoroutine(GenerateMesh());
+        isDirty = false;
     }
 
     // ReSharper disable Unity.PerformanceAnalysis
@@ -76,14 +70,14 @@ public class Chunk : MonoBehaviour
             {
                 for (var chunkZ = 0; chunkZ < 16; chunkZ++)
                 {
-                    var voxel = voxels[chunkX, chunkY, chunkZ];
-                    if (voxel.type == 0) continue; // Skip empty voxel
+                    var voxel = Voxels[chunkX, chunkY, chunkZ];
+                    if (voxel.Type == 0) continue; // Skip empty voxel
                     // Assign faces to corresponding texture groups
 
                     for (var i = 0; i < 6; i++) // Loop through each face direction
                     {
                         var direction = indexToDirection[i];
-                        AddFaceIfNeeded(vertices, textureToTriangles[(voxel.id, i)], uvs,
+                        AddFaceIfNeeded(vertices, textureToTriangles[(voxel.ID, i)], uvs,
                             new Vector3(chunkX, chunkY, chunkZ), direction);
                     }
                 }
@@ -121,43 +115,49 @@ public class Chunk : MonoBehaviour
         }
         // Apply the materials to the mesh renderer
         meshRenderer.materials = meshMaterials.ToArray();
+        // Enable the mesh
+        meshRenderer.enabled = true;
     }
 
-    public void UpdateMeshLocal(int voxelX, int voxelZ)
+    // ReSharper disable Unity.PerformanceAnalysis
+    public void UpdateNeighborMeshes(int voxelX, int voxelZ)
     {
-        if (voxelX == 0)
+        switch (voxelX)
         {
-            // Update chunk on the left
-            chunkPool.activeChunks[new Vector2Int(x - 1, y)].GetComponent<Chunk>().isDirty = true;
+            case 0:
+                // Update chunk on the left
+                chunkPool.ActiveChunks[new Vector2Int(x - 1, y)].GetComponent<Chunk>().isDirty = true;
+                break;
+            case 15:
+                // Update chunk on the right
+                chunkPool.ActiveChunks[new Vector2Int(x + 1, y)].GetComponent<Chunk>().isDirty = true;
+                break;
         }
-        if (voxelX == 15)
+
+        switch (voxelZ)
         {
-            // Update chunk on the right
-            chunkPool.activeChunks[new Vector2Int(x + 1, y)].GetComponent<Chunk>().isDirty = true;
+            case 0:
+                // Update chunk below
+                chunkPool.ActiveChunks[new Vector2Int(x, y - 1)].GetComponent<Chunk>().isDirty = true;
+                break;
+            case 15:
+                // Update chunk above
+                chunkPool.ActiveChunks[new Vector2Int(x, y + 1)].GetComponent<Chunk>().isDirty = true;
+                break;
         }
-        if (voxelZ == 0)
-        {
-            // Update chunk below
-            chunkPool.activeChunks[new Vector2Int(x, y - 1)].GetComponent<Chunk>().isDirty = true;
-        }
-        if (voxelZ == 15)
-        {
-            // Update chunk above
-            chunkPool.activeChunks[new Vector2Int(x, y + 1)].GetComponent<Chunk>().isDirty = true;
-        }
-        isDirty = true; // Add local mesh logic later
+
+        isDirty = true;
     }
 
-    public void LoadData(Vector2Int coord)
+    // ReSharper disable Unity.PerformanceAnalysis
+    public async Task LoadData(Vector2Int coord)
     {
-        SaveSystem.LoadChunk(coord, out voxels);
+        await Task.Run(() => SaveSystem.LoadChunk(coord, out Voxels));
         x = coord.x;
         y = coord.y;
-        // Once data is loaded, mark the mesh as dirty
-        CreateMesh();
     }
 
-    void AddFaceIfNeeded(List<Vector3> vertices, List<int> triangles, List<Vector2> uvs, Vector3 position, Vector3 direction)
+    private void AddFaceIfNeeded(List<Vector3> vertices, List<int> triangles, List<Vector2> uvs, Vector3 position, Vector3 direction)
     {
         if (ChunkUtils.ShouldAddFace(this, (int)position.x, (int)position.y, (int)position.z, direction))
         {
@@ -165,15 +165,15 @@ public class Chunk : MonoBehaviour
         }
     }
 
-    void AddFace(List<Vector3> vertices, List<int> triangles, List<Vector2> uvs, Vector3 position, Vector3 direction)
+    private static void AddFace(List<Vector3> vertices, List<int> triangles, List<Vector2> uvs, Vector3 position, Vector3 direction)
     {
         var faceVertices = direction switch
         {
-            { } d when d == Vector3.up => faceVerticesUp,
-            { } d when d == Vector3.down => faceVerticesDown,
-            { } d when d == Vector3.right => faceVerticesRight,
-            { } d when d == Vector3.left => faceVerticesLeft,
-            { } d when d == Vector3.forward => faceVerticesForward,
+            { } when direction == Vector3.up => faceVerticesUp,
+            { } when direction == Vector3.down => faceVerticesDown,
+            { } when direction == Vector3.right => faceVerticesRight,
+            { } when direction == Vector3.left => faceVerticesLeft,
+            { } when direction == Vector3.forward => faceVerticesForward,
             _ => faceVerticesBack,
         };
 
@@ -193,8 +193,7 @@ public class Chunk : MonoBehaviour
         triangles.Add(vertexCount + 3);
     }
 
-    private static readonly Vector3[] indexToDirection = new Vector3[]
-    {
+    private static readonly Vector3[] indexToDirection = {
         Vector3.back,
         Vector3.right,
         Vector3.forward,
@@ -206,56 +205,49 @@ public class Chunk : MonoBehaviour
     public bool HasMesh => meshFilter != null;
 
     // Define face vertices depending on the direction
-    private static readonly Vector3[] faceVerticesUp = new Vector3[]
-    {
+    private static readonly Vector3[] faceVerticesUp = {
         new(-0.5f, 0.5f, -0.5f),
         new(0.5f, 0.5f, -0.5f),
         new(-0.5f, 0.5f, 0.5f),
         new(0.5f, 0.5f, 0.5f)
     };
 
-    private static readonly Vector3[] faceVerticesDown = new Vector3[]
-    {
+    private static readonly Vector3[] faceVerticesDown = {
         new(-0.5f, -0.5f, 0.5f),
         new(0.5f, -0.5f, 0.5f),
         new(-0.5f, -0.5f, -0.5f),
         new(0.5f, -0.5f, -0.5f)
     };
 
-    private static readonly Vector3[] faceVerticesRight = new Vector3[]
-    {
+    private static readonly Vector3[] faceVerticesRight = {
         new(0.5f, 0.5f, 0.5f),
         new(0.5f, 0.5f, -0.5f),
         new(0.5f, -0.5f, 0.5f),
         new(0.5f, -0.5f, -0.5f)
     };
 
-    private static readonly Vector3[] faceVerticesLeft = new Vector3[]
-    {
+    private static readonly Vector3[] faceVerticesLeft = {
         new(-0.5f, 0.5f, -0.5f),
         new(-0.5f, 0.5f, 0.5f),
         new(-0.5f, -0.5f, -0.5f),
         new(-0.5f, -0.5f, 0.5f)
     };
 
-    private static readonly Vector3[] faceVerticesForward = new Vector3[]
-    {
+    private static readonly Vector3[] faceVerticesForward = {
         new(-0.5f, 0.5f, 0.5f),
         new(0.5f, 0.5f, 0.5f),
         new(-0.5f, -0.5f, 0.5f),
         new(0.5f, -0.5f, 0.5f)
     };
 
-    private static readonly Vector3[] faceVerticesBack = new Vector3[]
-    {
+    private static readonly Vector3[] faceVerticesBack = {
         new(0.5f, 0.5f, -0.5f),
         new(-0.5f, 0.5f, -0.5f),
         new(0.5f, -0.5f, -0.5f),
         new(-0.5f, -0.5f, -0.5f)
     };
 
-    private static readonly Vector2[] faceUVs = new Vector2[]
-    {
+    private static readonly Vector2[] faceUVs = {
         new(0, 1),
         new(1, 1),
         new(0, 0),

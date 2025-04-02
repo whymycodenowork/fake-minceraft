@@ -4095,8 +4095,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5dccdfb74af2bb24bbc47101c1f2dd5c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  MyRigidbody: {fileID: 1393407526}
-  MainCamera: {fileID: 963194228}
+  myRigidbody: {fileID: 1393407526}
+  mainCamera: {fileID: 963194228}
   pauseManager: {fileID: 380199903}
   inventoryManager: {fileID: 2009666713}
   baseMovementSpeed: 0.1
@@ -4391,7 +4391,6 @@ MonoBehaviour:
   heightOffset: 64
   offset: {x: 1243, y: -7689}
   zoom: 0.01
-  heightOffset2: 0
   offset2: {x: -6788, y: 3567}
   zoom2: 0.01
   heightMultiplier: 100
