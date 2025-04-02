@@ -34,7 +34,7 @@ public class Chunk : MonoBehaviour
 
     private void OnEnable()
     {
-        transform.position = new Vector3(x * 16, 0, y * 16);
+        transform.position = new(x * 16, 0, y * 16);
 
         Voxels ??= terrainGenerator.GenerateTerrain(x, y);
         
@@ -47,7 +47,12 @@ public class Chunk : MonoBehaviour
         {
             while (Application.isPlaying)
             {
-                if (isDirty) await GenerateMeshThreaded();
+                if (isDirty)
+                {
+                    isDirty = false;
+                    await GenerateMeshThreaded();
+                }
+
                 await Task.Yield(); // Prevent CPU overload
             }
         }
@@ -60,28 +65,27 @@ public class Chunk : MonoBehaviour
     // ReSharper disable Unity.PerformanceAnalysis
     private async Task GenerateMeshThreaded()
     {
-        Debug.Log("Started generating mesh...");
         // Run heavy mesh data generation off the main thread.
         var meshData = await Task.Run(() =>
         {
-            Debug.Log("Generating mesh...");
-            var data = new MeshData();
+            var data = new MeshData
+            {
+                Vertices = new(),
+                Uvs = new(),
+                TextureToTriangles = new()
+            };
     
             // Initialize dictionary for each texture id and face direction.
             for (var id = 0; id < _materials.GetLength(0); id++)
             {
-                Debug.Log("Dictionary row started!");
                 for (var direction = 0; direction < 6; direction++)
                 {
-                    data.TextureToTriangles[(id, direction)] = new List<int>(); // TODO: Fix NullReferenceException
+                    data.TextureToTriangles[(id, direction)] = new();
                 }
-                Debug.Log("Dictionary row finished!");
             }
-            Debug.Log("Dictionary created!");
             // Build the mesh data.
             for (var chunkX = 0; chunkX < 16; chunkX++)
             {
-                Debug.Log("Row started");
                 for (var chunkY = 0; chunkY < 255; chunkY++)
                 {
                     for (var chunkZ = 0; chunkZ < 16; chunkZ++)
@@ -121,9 +125,7 @@ public class Chunk : MonoBehaviour
                         }
                     }
                 }
-                Debug.Log("Row complete!");
             }
-            Debug.Log("Finished generating mesh...");
             return data;
         });
     
@@ -157,7 +159,6 @@ public class Chunk : MonoBehaviour
         }
         meshRenderer.materials = meshMaterials.ToArray();
         meshRenderer.enabled = true;
-        Debug.Log("Mesh generation complete");
     }
 
     public void UpdateNeighborMeshes(int voxelX, int voxelZ)
@@ -166,11 +167,11 @@ public class Chunk : MonoBehaviour
         {
             case 0:
                 // Update chunk on the left
-                chunkPool.ActiveChunks[new Vector2Int(x - 1, y)].GetComponent<Chunk>().isDirty = true;
+                chunkPool.ActiveChunks[new(x - 1, y)].GetComponent<Chunk>().isDirty = true;
                 break;
             case 15:
                 // Update chunk on the right
-                chunkPool.ActiveChunks[new Vector2Int(x + 1, y)].GetComponent<Chunk>().isDirty = true;
+                chunkPool.ActiveChunks[new(x + 1, y)].GetComponent<Chunk>().isDirty = true;
                 break;
         }
 
@@ -178,11 +179,11 @@ public class Chunk : MonoBehaviour
         {
             case 0:
                 // Update chunk below
-                chunkPool.ActiveChunks[new Vector2Int(x, y - 1)].GetComponent<Chunk>().isDirty = true;
+                chunkPool.ActiveChunks[new(x, y - 1)].GetComponent<Chunk>().isDirty = true;
                 break;
             case 15:
                 // Update chunk above
-                chunkPool.ActiveChunks[new Vector2Int(x, y + 1)].GetComponent<Chunk>().isDirty = true;
+                chunkPool.ActiveChunks[new(x, y + 1)].GetComponent<Chunk>().isDirty = true;
                 break;
         }
 

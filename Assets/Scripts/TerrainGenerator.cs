@@ -37,35 +37,35 @@ public class TerrainGenerator : MonoBehaviour
                         if (heightAtPoint >= 60)
                         {
                             // Create grass at top and if not submerged
-                            terrain[x, y, z] = new Voxel(2, 1);
+                            terrain[x, y, z] = new(2, 1);
                         }
                         else
                         {
                             // If submerged, place dirt instead
-                            terrain[x, y, z] = new Voxel(1, 1);
+                            terrain[x, y, z] = new(1, 1);
                         }
                     }
                     else if (y < heightAtPoint && y > heightAtPoint - 6)
                     {
                         // Dirt
-                        terrain[x, y, z] = new Voxel(1, 1);
+                        terrain[x, y, z] = new(1, 1);
                     }
                     else if (y < heightAtPoint - 5)
                     {
                         // Stone
-                        terrain[x, y, z] = new Voxel(4, 1);
+                        terrain[x, y, z] = new(4, 1);
                     }
 
                     else if (y > heightAtPoint && y <= 60)
                     {
                         // Water
-                        terrain[x, y, z] = new Voxel(3, 2);
+                        terrain[x, y, z] = new(3, 2);
                     }
 
                     else
                     {
                         // Air
-                        terrain[x, y, z] = new Voxel();
+                        terrain[x, y, z] = new();
                     }
                 }
             }

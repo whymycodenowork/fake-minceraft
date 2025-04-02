@@ -31,7 +31,7 @@ public class PlayerLook : MonoBehaviour
             turn.x = Mathf.Clamp(turn.x, -80, 80); // Prevent excessive tilt
 
             // Apply vertical rotation to the head
-            transform.localEulerAngles = new Vector3(0, 0, turn.x);
+            transform.localEulerAngles = new(0, 0, turn.x);
 
             // Apply horizontal rotation to the parent
             transform.parent.Rotate(mouseX * sensitivity * Vector3.up, Space.World); // Rotate parent

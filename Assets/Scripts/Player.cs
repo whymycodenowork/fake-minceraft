@@ -31,7 +31,7 @@ public class Player : MonoBehaviour
     private void FixedUpdate()
     {
         var targetVelocity = Vector3.SmoothDamp(myRigidbody.linearVelocity, Vector3.zero, ref _currentVelocity, 0.2f);
-        myRigidbody.linearVelocity = new Vector3(targetVelocity.x, myRigidbody.linearVelocity.y, targetVelocity.z);
+        myRigidbody.linearVelocity = new(targetVelocity.x, myRigidbody.linearVelocity.y, targetVelocity.z);
         if (pauseManager.isPaused || inventoryManager.inventoryOpen)
             return; // Disable movement and other interactions if a menu is open
         MovePlayer();
@@ -81,7 +81,7 @@ public class Player : MonoBehaviour
         var selectedItem = inventoryManager.HotbarItems[(int)Mathf.Round(inventoryManager.hotbarSlot)];
         _selectedBlock = selectedItem switch
         {
-            Nothing => new Voxel(0),
+            Nothing => new(0),
             BlockItem blockItem => blockItem.BlockToPlace,
             _ => _selectedBlock
         };
@@ -128,7 +128,7 @@ public class Player : MonoBehaviour
         _isGrounded = Physics.Raycast(transform.position, Vector3.down, 1.01f, groundLayer);
         if (!_isGrounded) return;
         var velocity = myRigidbody.linearVelocity;
-        myRigidbody.linearVelocity = new Vector3(velocity.x, jumpHeight, velocity.z);
+        myRigidbody.linearVelocity = new(velocity.x, jumpHeight, velocity.z);
     }
 
     private void HandleFly(string direction)
@@ -239,7 +239,7 @@ public class Player : MonoBehaviour
         if (localX < 0) localX += CHUNK_SIZE;
         if (localZ < 0) localZ += CHUNK_SIZE;
 
-        localPosition = new Vector3(localX, location.y, localZ);
-        return new Vector2Int(chunkX, chunkZ);
+        localPosition = new(localX, location.y, localZ);
+        return new(chunkX, chunkZ);
     }
 }

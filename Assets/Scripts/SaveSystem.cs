@@ -49,7 +49,7 @@ public static class SaveSystem
                 {
                     var id = reader.ReadByte();
                     var type = reader.ReadByte();
-                    voxels[i, j, k] = new Voxel(id, type);
+                    voxels[i, j, k] = new(id, type);
                 }
             }
         }

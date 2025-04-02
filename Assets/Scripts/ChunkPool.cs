@@ -14,7 +14,7 @@ public class ChunkPool : MonoBehaviour
     public int saveFile = 1;
     private const int CHUNK_SIZE = 16;
 
-    public readonly Dictionary<Vector2Int, GameObject> ActiveChunks = new();
+    public readonly Dictionary<Vector2Int, Chunk> ActiveChunks = new();
     private readonly Queue<GameObject> _chunkPool = new();
     private readonly List<Vector2Int> _chunksToUnload = new();
 
@@ -60,7 +60,7 @@ public class ChunkPool : MonoBehaviour
     private Vector2Int GetPlayerChunkCoord()
     {
         Vector2 playerChunkPosition = new(player.position.x / CHUNK_SIZE, player.position.z / CHUNK_SIZE);
-        return new Vector2Int(Mathf.FloorToInt(playerChunkPosition.x), Mathf.FloorToInt(playerChunkPosition.y));
+        return new(Mathf.FloorToInt(playerChunkPosition.x), Mathf.FloorToInt(playerChunkPosition.y));
     }
 
     // ReSharper disable Unity.PerformanceAnalysis
@@ -80,7 +80,7 @@ public class ChunkPool : MonoBehaviour
         var chunkScript = chunk.GetComponent<Chunk>();
         chunkScript.x = coord.x;
         chunkScript.y = coord.y;
-        ActiveChunks[coord] = chunk;
+        ActiveChunks[coord] = chunkScript;
 
         var filePath = $"Assets/SaveData/SaveFile{saveFile}/chunk_{coord.x}_{coord.y}.dat";
 
@@ -125,9 +125,9 @@ public class ChunkPool : MonoBehaviour
     // ReSharper disable Unity.PerformanceAnalysis
     private async Task UnloadChunkAsync(Vector2Int coord)
     {
-        if (!ActiveChunks.TryGetValue(coord, out var chunk)) return;
+        if (!ActiveChunks.TryGetValue(coord, out var chunkScript)) return;
 
-        var chunkVoxels = chunk.GetComponent<Chunk>().Voxels;
+        var chunkVoxels = chunkScript.GetComponent<Chunk>().Voxels;
 
         // Save chunk data asynchronously
         await Task.Run(() => SaveSystem.SaveChunk(coord, chunkVoxels));
@@ -135,6 +135,7 @@ public class ChunkPool : MonoBehaviour
         // Back to main thread: deactivate chunk
         UnityMainThread(() =>
         {
+            var chunk = chunkScript.gameObject;
             chunk.SetActive(false);
             _chunkPool.Enqueue(chunk);
             ActiveChunks.Remove(coord);
