@@ -1,4 +1,4 @@
-using System.Collections;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -19,12 +19,17 @@ public class Chunk : MonoBehaviour
     public MeshCollider meshCollider;
     public MeshRenderer meshRenderer;
 
+    public const int HEIGHT = 255;
+    public const int WIDTH = 16;
+    public const int LENGTH = 16;
+
     private void Awake()
     {
         meshFilter = GetComponent<MeshFilter>();
         meshCollider = GetComponent<MeshCollider>();
         meshRenderer = GetComponent<MeshRenderer>();
         _materials = TextureManager.materials;
+        _ = StartLoop();
     }
 
     private void OnEnable()
@@ -36,90 +41,125 @@ public class Chunk : MonoBehaviour
         isDirty = true;
     }
 
-    private void Update()
+    private async Task StartLoop()
     {
-        if (Voxels == null) Debug.LogWarning("ahhhhhhhhhhhhhhhhhhhhhhhh 2");
-        if (!isDirty) return;
-        StartCoroutine(GenerateMesh());
-        isDirty = false;
+        try
+        {
+            while (Application.isPlaying)
+            {
+                if (isDirty) await GenerateMeshThreaded();
+                await Task.Yield(); // Prevent CPU overload
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogException(e);
+        }
     }
 
     // ReSharper disable Unity.PerformanceAnalysis
-    private IEnumerator GenerateMesh()
+    private async Task GenerateMeshThreaded()
     {
-        Mesh mesh = new();
-        List<Vector3> vertices = new();
-        List<Vector2> uvs = new();
-
-        // Dictionary to store triangle lists for each texture on each face
-        Dictionary<(int, int), List<int>> textureToTriangles = new();
-        List<Material> meshMaterials = new();
-
-        // Initialize the triangle list for each texture and face direction
-        for (var id = 0; id < _materials.GetLength(0); id++)
+        Debug.Log("Started generating mesh...");
+        // Run heavy mesh data generation off the main thread.
+        var meshData = await Task.Run(() =>
         {
-            for (var direction = 0; direction < 6; direction++) // 6 faces per voxel
+            Debug.Log("Generating mesh...");
+            var data = new MeshData();
+    
+            // Initialize dictionary for each texture id and face direction.
+            for (var id = 0; id < _materials.GetLength(0); id++)
             {
-                textureToTriangles[(id, direction)] = new List<int>();
-            }
-        }
-
-        for (var chunkX = 0; chunkX < 16; chunkX++)
-        {
-            for (var chunkY = 0; chunkY < 255; chunkY++)
-            {
-                for (var chunkZ = 0; chunkZ < 16; chunkZ++)
+                Debug.Log("Dictionary row started!");
+                for (var direction = 0; direction < 6; direction++)
                 {
-                    var voxel = Voxels[chunkX, chunkY, chunkZ];
-                    if (voxel.Type == 0) continue; // Skip empty voxel
-                    // Assign faces to corresponding texture groups
-
-                    for (var i = 0; i < 6; i++) // Loop through each face direction
+                    data.TextureToTriangles[(id, direction)] = new List<int>(); // TODO: Fix NullReferenceException
+                }
+                Debug.Log("Dictionary row finished!");
+            }
+            Debug.Log("Dictionary created!");
+            // Build the mesh data.
+            for (var chunkX = 0; chunkX < 16; chunkX++)
+            {
+                Debug.Log("Row started");
+                for (var chunkY = 0; chunkY < 255; chunkY++)
+                {
+                    for (var chunkZ = 0; chunkZ < 16; chunkZ++)
                     {
-                        var direction = indexToDirection[i];
-                        AddFaceIfNeeded(vertices, textureToTriangles[(voxel.ID, i)], uvs,
-                            new Vector3(chunkX, chunkY, chunkZ), direction);
+                        var voxel = Voxels[chunkX, chunkY, chunkZ];
+                        if (voxel.Type == 0) continue; // Skip empty voxel
+    
+                        for (var i = 0; i < 6; i++) // Loop through each face
+                        {
+                            var direction = indexToDirection[i];
+                            if (!ChunkUtils.ShouldAddFace(this, chunkX, chunkY, chunkZ, direction)) continue;
+                            var vertexCount = data.Vertices.Count;
+                            // Select face vertices based on direction.
+                            var faceVertices = direction switch
+                            {
+                                _ when direction == Vector3.up => faceVerticesUp,
+                                _ when direction == Vector3.down => faceVerticesDown,
+                                _ when direction == Vector3.right => faceVerticesRight,
+                                _ when direction == Vector3.left => faceVerticesLeft,
+                                _ when direction == Vector3.forward => faceVerticesForward,
+                                _ => faceVerticesBack,
+                            };
+    
+                            for (var j = 0; j < 4; j++)
+                            {
+                                data.Vertices.Add(new Vector3(chunkX, chunkY, chunkZ) + faceVertices[j]);
+                                data.Uvs.Add(faceUVs[j]);
+                            }
+    
+                            // Add two triangles for the face.
+                            data.TextureToTriangles[(voxel.ID, i)].Add(vertexCount);
+                            data.TextureToTriangles[(voxel.ID, i)].Add(vertexCount + 2);
+                            data.TextureToTriangles[(voxel.ID, i)].Add(vertexCount + 1);
+                            data.TextureToTriangles[(voxel.ID, i)].Add(vertexCount + 1);
+                            data.TextureToTriangles[(voxel.ID, i)].Add(vertexCount + 2);
+                            data.TextureToTriangles[(voxel.ID, i)].Add(vertexCount + 3);
+                        }
                     }
                 }
+                Debug.Log("Row complete!");
             }
-            if (chunkX % 2 == 0) yield return null;
-        }
-
-        // Finalize the mesh data
-        mesh.vertices = vertices.ToArray();
-        mesh.uv = uvs.ToArray();
-        mesh.subMeshCount = textureToTriangles.Count;
-
-        // Assign triangles for each face texture
+            Debug.Log("Finished generating mesh...");
+            return data;
+        });
+    
+        // Back on the main thread: create and assign the mesh.
+        var mesh = new Mesh
+        {
+            vertices = meshData.Vertices.ToArray(),
+            uv = meshData.Uvs.ToArray(),
+            subMeshCount = meshData.TextureToTriangles.Count
+        };
+    
         var submeshIndex = 0;
-        foreach (var triangles in textureToTriangles.Values)
+        foreach (var triangles in meshData.TextureToTriangles.Values)
         {
             mesh.SetTriangles(triangles, submeshIndex++);
         }
-
-        // Finalize the mesh
         mesh.RecalculateNormals();
         mesh.RecalculateBounds();
-
-        // Assign the mesh to the mesh filter and collider
+    
         meshFilter.mesh = mesh;
         meshCollider.sharedMesh = mesh;
-
-        // Assign materials based on the face textures
+    
+        // Assign materials (this remains unchanged)
+        List<Material> meshMaterials = new();
         for (var type = 0; type < _materials.GetLength(0); type++)
         {
-            for (var direction = 0; direction < 6; direction++) // 6 faces per voxel
+            for (var direction = 0; direction < 6; direction++)
             {
                 meshMaterials.Add(_materials[type, direction]);
             }
         }
-        // Apply the materials to the mesh renderer
         meshRenderer.materials = meshMaterials.ToArray();
-        // Enable the mesh
         meshRenderer.enabled = true;
+        Debug.Log("Mesh generation complete");
     }
 
-    // ReSharper disable Unity.PerformanceAnalysis
     public void UpdateNeighborMeshes(int voxelX, int voxelZ)
     {
         switch (voxelX)
@@ -156,43 +196,7 @@ public class Chunk : MonoBehaviour
         x = coord.x;
         y = coord.y;
     }
-
-    private void AddFaceIfNeeded(List<Vector3> vertices, List<int> triangles, List<Vector2> uvs, Vector3 position, Vector3 direction)
-    {
-        if (ChunkUtils.ShouldAddFace(this, (int)position.x, (int)position.y, (int)position.z, direction))
-        {
-            AddFace(vertices, triangles, uvs, position, direction);
-        }
-    }
-
-    private static void AddFace(List<Vector3> vertices, List<int> triangles, List<Vector2> uvs, Vector3 position, Vector3 direction)
-    {
-        var faceVertices = direction switch
-        {
-            { } when direction == Vector3.up => faceVerticesUp,
-            { } when direction == Vector3.down => faceVerticesDown,
-            { } when direction == Vector3.right => faceVerticesRight,
-            { } when direction == Vector3.left => faceVerticesLeft,
-            { } when direction == Vector3.forward => faceVerticesForward,
-            _ => faceVerticesBack,
-        };
-
-        var vertexCount = vertices.Count;
-
-        for (var i = 0; i < 4; i++)
-        {
-            vertices.Add(position + faceVertices[i]);
-            uvs.Add(faceUVs[i]);
-        }
-
-        triangles.Add(vertexCount);
-        triangles.Add(vertexCount + 2);
-        triangles.Add(vertexCount + 1);
-        triangles.Add(vertexCount + 1);
-        triangles.Add(vertexCount + 2);
-        triangles.Add(vertexCount + 3);
-    }
-
+    
     private static readonly Vector3[] indexToDirection = {
         Vector3.back,
         Vector3.right,
@@ -253,4 +257,11 @@ public class Chunk : MonoBehaviour
         new(0, 0),
         new(1, 0)
     };
+    
+    private struct MeshData
+    {
+        public List<Vector3> Vertices;
+        public List<Vector2> Uvs;
+        public Dictionary<(int, int), List<int>> TextureToTriangles;
+    }
 }
