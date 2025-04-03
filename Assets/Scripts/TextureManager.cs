@@ -1,46 +1,50 @@
-using System.IO;
 using UnityEngine;
 
 public static class TextureManager
 {
-    public static Material[,] materials; // Textures for Voxels
-    public static Texture2D[,] blockItemTextures; // Textures for BlockItems
-    public static Texture2D[] itemTextures; // Textures for Items
+    public static readonly Material[,] Materials; // Textures for Voxels
+    public static readonly Texture2D[,] BlockItemTextures; // Textures for BlockItems
+    public static readonly Texture2D[] ItemTextures; // Textures for Items
 
     // Static constructor (runs once when the class is first accessed)
     static TextureManager()
     {
-        var amountOfImages = Directory.GetFiles("Assets/Images", "*.png").Length;
+        // Load all textures in Resources/Textures
+        var textures = Resources.LoadAll<Texture2D>("Textures");
+        var amountOfImages = textures.Length / 6; // Divide by 6
 
-        materials = new Material[amountOfImages, 6];
-        blockItemTextures = new Texture2D[amountOfImages, 6];
+        Materials = new Material[amountOfImages, 6];
+        BlockItemTextures = new Texture2D[amountOfImages, 6];
 
         for (var id = 0; id < amountOfImages; id++)
         {
             for (var direction = 0; direction < 6; direction++)
             {
-                var texture = Resources.Load<Texture2D>($"Textures/{id},{direction}");
-                if (texture != null)
+                var textureIndex = id * 6 + direction;
+                if (textureIndex < textures.Length)
                 {
-                    blockItemTextures[id, direction] = texture;
+                    var texture = textures[textureIndex];
+                    BlockItemTextures[id, direction] = texture;
                     Material material = new(Shader.Find("Standard"))
                     {
                         mainTexture = texture
                     };
-                    materials[id, direction] = material;
+                    Materials[id, direction] = material;
                 }
                 else
                 {
-                    Debug.LogError($"Texture not found: Textures/{id},{direction}");
+                    Debug.LogError($"Texture missing for direction {direction} of block ID {id}");
                 }
             }
         }
-        amountOfImages = Directory.GetFiles("Assets/Resources/ItemImages", "*.png").Length;
 
-        itemTextures = new Texture2D[amountOfImages];
-        for (var id = 0; id < amountOfImages; id++)
+        // Load all item textures in Resources/ItemImages
+        var itemTextures = Resources.LoadAll<Texture2D>("ItemImages");
+        ItemTextures = new Texture2D[itemTextures.Length];
+
+        for (var id = 0; id < itemTextures.Length; id++)
         {
-            itemTextures[id] = Resources.Load<Texture2D>($"ItemImages/{id}");
+            ItemTextures[id] = itemTextures[id];
         }
-    } 
+    }
 }

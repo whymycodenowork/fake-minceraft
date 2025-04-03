@@ -7,13 +7,14 @@ public class MainMenu : MonoBehaviour
     public GameObject settings;
     public GameObject singleplayer;
     public GameObject back;
-    void Start()
+
+    private void Start()
     {
         settings.SetActive(false);
         singleplayer.SetActive(false);
     }
 
-    void Update()
+    private void Update()
     {
         if (!main.activeSelf)
         {

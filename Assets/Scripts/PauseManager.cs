@@ -11,16 +11,18 @@ public class PauseManager : MonoBehaviour
     public GameObject pauseSettings;
     public Slider renderDistanceSlider;
     public TextMeshProUGUI renderDistanceText;
+    public Slider saveFrequencySlider;
+    public TextMeshProUGUI saveFrequencyText;
     public ChunkPool chunkPool;
     public bool isPaused; // Track whether the game is paused
 
-    void Start()
+    private void Start()
     {
         Resume();
         pauseSettings.SetActive(false);
     }
 
-    void Update()
+    private void Update()
     {
         // use this update cuz im not using it for much else
         SaveSystem.Update(Time.deltaTime);
@@ -38,6 +40,10 @@ public class PauseManager : MonoBehaviour
         var renderDistance = (int)renderDistanceSlider.value;
         renderDistanceText.text = renderDistance.ToString();
         chunkPool.viewDistance = renderDistance;
+        
+        var saveFrequency = (int)saveFrequencySlider.value;
+        saveFrequencyText.text = saveFrequency.ToString();
+        SaveSystem.saveInterval = saveFrequency * 60;
     }
 
     public void Resume()
@@ -47,7 +53,7 @@ public class PauseManager : MonoBehaviour
         isPaused = false; // Update the pause state
     }
 
-    void Pause()
+    private void Pause()
     {
         pauseMenuUI.SetActive(true); // Show the pause menu
         Time.timeScale = 0f; // Pause game time

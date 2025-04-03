@@ -1,3 +1,4 @@
+using System;
 using Items;
 using UnityEngine;
 
@@ -61,19 +62,19 @@ public class Player : MonoBehaviour
         {
             movementSpeed = baseMovementSpeed;
         }
-        /*
-        Vector2Int currentChunkPos = GetChunkPosition(transform.position, out Vector3 n);
-        if (!chunkPool.activeChunks.ContainsKey(currentChunkPos))
+        var currentChunkPos = GetChunkPosition(transform.position, out var n);
+        if (!chunkPool.ActiveChunks.ContainsKey(currentChunkPos))
         {
-            MyRigidbody.velocity = Vector3.zero;
-            Debug.LogWarning("out of bounds!");
+            myRigidbody.linearVelocity = Vector3.zero;
         }
-        else if (chunkPool.activeChunks[new Vector2Int(currentChunkPos.x, currentChunkPos.y)].GetComponent<Chunk>().HasMesh)
+        else if (!chunkPool.ActiveChunks[new(currentChunkPos.x, currentChunkPos.y)].HasMesh)
         {
-            MyRigidbody.velocity = Vector3.zero;
-            Debug.LogWarning("out of bounds!");
+            myRigidbody.linearVelocity = Vector3.zero;
         }
-        */
+        else
+        {
+            myRigidbody.WakeUp();
+        }
     }
     
     private void Update()
@@ -118,7 +119,7 @@ public class Player : MonoBehaviour
         }
 
         movementDirection.y = 0; // Make movement horizontal
-        movementDirection.Normalize(); // No square root of 2 times extra speed when holding 2 keys 
+        movementDirection.Normalize(); // No square root of 2 times extra speed when holding 2 keys at once
 
         myRigidbody.linearVelocity += movementDirection * movementSpeed;
     }
@@ -210,13 +211,11 @@ public class Player : MonoBehaviour
                 var voxel = chunkVoxels[(int)localPosition.x, (int)localPosition.y, (int)localPosition.z];
                 if (voxel.Type == 0) break;
                 // Debug.Log($"Deleted {voxel}");
-                chunkVoxels[(int)localPosition.x, (int)localPosition.y, (int)localPosition.z].Type = 0;
-                chunkScript.isDirty = true;
+                chunkVoxels[(int)localPosition.x, (int)localPosition.y, (int)localPosition.z].Destroy();
                 chunkScript.UpdateNeighborMeshes((int)localPosition.x, (int)localPosition.z);
                 break;
             case 1: // Right-click: Place voxel
                 chunkVoxels[(int)localPosition.x, (int)localPosition.y, (int)localPosition.z] = _selectedBlock;
-                chunkScript.isDirty = true;
                 chunkScript.UpdateNeighborMeshes((int)localPosition.x, (int)localPosition.z);
                 break;
             case 2:

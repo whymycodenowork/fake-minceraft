@@ -10,12 +10,12 @@ public class PlayerLook : MonoBehaviour
     public float cameraOffset;
     public LayerMask collisionLayers; // Layers to check for collisions
 
-    void Start()
+    private void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
     }
 
-    void Update()
+    private void Update()
     {
         // Lock the cursor if no menus are open
         if (!(pauseManager.isPaused || inventoryManager.inventoryOpen))

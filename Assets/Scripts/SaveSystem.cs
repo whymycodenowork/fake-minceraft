@@ -5,8 +5,20 @@ using UnityEngine;
 public static class SaveSystem
 {
     private static readonly Dictionary<Vector2Int, Voxel[,,]> chunkCache = new();
-    private const float SAVE_INTERVAL = 300f; // Save to disk every 5 minutes (300 seconds)
+    public static float saveInterval = 300f; // Save to disk every once in a while
     private static float _saveTimer;
+
+    public static string saveDataPath; // Needs to be initialized elsewhere
+
+    private static string GetSaveFilePath(Vector2Int coord)
+    {
+        var saveFolderPath = Path.Combine(saveDataPath, "SaveFile1");
+        if (!Directory.Exists(saveFolderPath))
+        {
+            Directory.CreateDirectory(saveFolderPath);
+        }
+        return Path.Combine(saveFolderPath, $"chunk_{coord.x}_{coord.y}.dat");
+    }
 
     // Save chunk to disk
     private static void SaveChunkToDisk(string path, Voxel[,,] voxels)
@@ -18,7 +30,7 @@ public static class SaveSystem
 
         using FileStream stream = new(path, FileMode.Create, FileAccess.Write, FileShare.None, 4096);
         using BinaryWriter writer = new(stream);
-        // Write voxel data
+        
         for (var i = 0; i < 16; i++)
         {
             for (var j = 0; j < 255; j++)
@@ -37,10 +49,9 @@ public static class SaveSystem
     {
         using FileStream stream = new(path, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.Asynchronous);
         using BinaryReader reader = new(stream);
-        // Initialize voxel array
+        
         voxels = new Voxel[16, 255, 16];
 
-        // Read voxel data
         for (var i = 0; i < 16; i++)
         {
             for (var j = 0; j < 255; j++)
@@ -63,7 +74,6 @@ public static class SaveSystem
             Debug.LogWarning("Trying to save a null chunk");
             return;
         }
-
         chunkCache[coord] = voxels;
     }
 
@@ -74,35 +84,34 @@ public static class SaveSystem
         {
             return;
         }
-        // 1 for now
 
-        if (File.Exists($"Assets/SaveData/SaveFile{1}/chunk_{coord.x}_{coord.y}.dat"))
+        var filePath = GetSaveFilePath(coord);
+        if (File.Exists(filePath))
         {
-            LoadChunkFromDisk($"Assets/SaveData/SaveFile{1}/chunk_{coord.x}_{coord.y}.dat", out voxels);
+            LoadChunkFromDisk(filePath, out voxels);
             return;
         }
         Debug.LogWarning($"Chunk at {coord} not found");
     }
 
     // Save all cached chunks to disk
-    // ReSharper disable Unity.PerformanceAnalysis
     public static void SaveAllChunksToDisk()
     {
         foreach (var kvp in chunkCache)
         {
-            var path = $"Assets/SaveData/SaveFile{1}/chunk_{kvp.Key.x}_{kvp.Key.y}.dat";
+            var path = GetSaveFilePath(kvp.Key);
             SaveChunkToDisk(path, kvp.Value);
         }
         chunkCache.Clear();
-        Debug.Log("All chunks saved to disk.");
     }
 
     // Update method for periodic saving
+    // ReSharper disable Unity.PerformanceAnalysis
     public static void Update(float deltaTime)
     {
         _saveTimer += deltaTime;
 
-        if (!(_saveTimer >= SAVE_INTERVAL)) return;
+        if (!(_saveTimer >= saveInterval)) return;
         SaveAllChunksToDisk();
         _saveTimer = 0f;
     }

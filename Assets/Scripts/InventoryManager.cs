@@ -55,7 +55,8 @@ public class InventoryManager : MonoBehaviour
     {
         UpdateHotbarUI();
     }
-    void Update()
+
+    private void Update()
     {
         if (!inventory.activeSelf)
         {
@@ -87,7 +88,7 @@ public class InventoryManager : MonoBehaviour
         }
     }
 
-    void UpdateHotbarUI()
+    private void UpdateHotbarUI()
     {
         // Loop through each slot and apply the color and image
         for (var i = 0; i < hotbarSlots.Length; i++)
@@ -97,11 +98,11 @@ public class InventoryManager : MonoBehaviour
             var currentHotbarImage = currentHotbarSlot.transform.GetChild(0).GetComponent<RawImage>();
             if (HotbarItems[i] is BlockItem blockItem)
             {
-                currentHotbarImage.texture = TextureManager.blockItemTextures[blockItem.BlockToPlace.ID, 0];
+                currentHotbarImage.texture = TextureManager.BlockItemTextures[blockItem.BlockToPlace.ID, 0];
             }
             else
             {
-                currentHotbarImage.texture = TextureManager.itemTextures[HotbarItems[i].TextureID];
+                currentHotbarImage.texture = TextureManager.ItemTextures[HotbarItems[i].TextureID];
             }
         }
     }

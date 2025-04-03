@@ -28,7 +28,7 @@ public class Chunk : MonoBehaviour
         meshFilter = GetComponent<MeshFilter>();
         meshCollider = GetComponent<MeshCollider>();
         meshRenderer = GetComponent<MeshRenderer>();
-        _materials = TextureManager.materials;
+        _materials = TextureManager.Materials;
         _ = StartLoop();
     }
 
@@ -49,6 +49,7 @@ public class Chunk : MonoBehaviour
             {
                 if (isDirty)
                 {
+                    if (Voxels == null) Debug.LogWarning("ahhhhhhhhhh 2");
                     isDirty = false;
                     await GenerateMeshThreaded();
                 }
@@ -65,6 +66,7 @@ public class Chunk : MonoBehaviour
     // ReSharper disable Unity.PerformanceAnalysis
     private async Task GenerateMeshThreaded()
     {
+        if (Voxels == null) Debug.LogWarning("ahhhhhhhhhh");
         // Run heavy mesh data generation off the main thread.
         var meshData = await Task.Run(() =>
         {

@@ -18,7 +18,12 @@ public class ChunkPool : MonoBehaviour
     private readonly Queue<GameObject> _chunkPool = new();
     private readonly List<Vector2Int> _chunksToUnload = new();
 
-    private void Start()
+    private void Awake()
+    {
+        SaveSystem.saveDataPath = Application.persistentDataPath;
+    }
+
+private void Start()
     {
         _ = StartLoop();
     }
@@ -82,7 +87,7 @@ public class ChunkPool : MonoBehaviour
         chunkScript.y = coord.y;
         ActiveChunks[coord] = chunkScript;
 
-        var filePath = $"Assets/SaveData/SaveFile{saveFile}/chunk_{coord.x}_{coord.y}.dat";
+        var filePath = Path.Combine(Application.persistentDataPath, $"SaveFile{saveFile}/chunk_{coord.x}_{coord.y}.dat");
 
         if (File.Exists(filePath))
         {
@@ -91,7 +96,7 @@ public class ChunkPool : MonoBehaviour
         }
         else
         {
-            chunkScript.Voxels = null;
+            chunkScript.Voxels = chunkScript.terrainGenerator.GenerateTerrain(coord.x, coord.y);
         }
         
         // Back to main thread: enable chunk and update neighbors
@@ -117,7 +122,7 @@ public class ChunkPool : MonoBehaviour
         {
             if (ActiveChunks.TryGetValue(neighbor, out var neighborChunk))
             {
-                neighborChunk.GetComponent<Chunk>().isDirty = true;
+                neighborChunk.isDirty = true;
             }
         }
     }
