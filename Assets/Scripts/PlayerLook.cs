@@ -10,12 +10,12 @@ public class PlayerLook : MonoBehaviour
     public float cameraOffset;
     public LayerMask collisionLayers; // Layers to check for collisions
 
-    void Start()
+    private void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
     }
 
-    void Update()
+    private void Update()
     {
         // Lock the cursor if no menus are open
         if (!(pauseManager.isPaused || inventoryManager.inventoryOpen))
@@ -24,14 +24,14 @@ public class PlayerLook : MonoBehaviour
                 Cursor.lockState = CursorLockMode.Locked;
 
             // Capture mouse input
-            float mouseX = Input.GetAxis("Mouse X");
-            float mouseY = Input.GetAxis("Mouse Y");
+            var mouseX = Input.GetAxis("Mouse X");
+            var mouseY = Input.GetAxis("Mouse Y");
 
             turn.x += mouseY * sensitivity;
             turn.x = Mathf.Clamp(turn.x, -80, 80); // Prevent excessive tilt
 
             // Apply vertical rotation to the head
-            transform.localEulerAngles = new Vector3(0, 0, turn.x);
+            transform.localEulerAngles = new(0, 0, turn.x);
 
             // Apply horizontal rotation to the parent
             transform.parent.Rotate(mouseX * sensitivity * Vector3.up, Space.World); // Rotate parent

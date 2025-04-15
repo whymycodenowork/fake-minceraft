@@ -6,67 +6,66 @@ public class TerrainGenerator : MonoBehaviour
     public Vector2 offset;
     public float zoom;
 
-    public int heightOffset2;
     public Vector2 offset2;
     public float zoom2;
     public float heightMultiplier;
 
-    private const int width = 16;
-    private const int height = 255;
-    private const int length = 16;
+    private const int WIDTH = 16;
+    private const int HEIGHT = 255;
+    private const int LENGTH = 16;
 
     public Voxel[,,] GenerateTerrain(int offsetX, int offsetY)
     {
-        Voxel[,,] terrain = new Voxel[width, height, length];
+        var terrain = new Voxel[WIDTH, HEIGHT, LENGTH];
 
-        for (int x = 0; x < width; x++)
+        for (var x = 0; x < WIDTH; x++)
         {
-            for (int z = 0; z < length; z++)
+            for (var z = 0; z < LENGTH; z++)
             {
-                float noiseValue = Mathf.PerlinNoise((offsetX * width + x + offset.x) * zoom, (offsetY * length + z + offset.y) * zoom);
-                noiseValue *= Mathf.PerlinNoise((offsetX * width + x + offset2.x) * zoom2, (offsetY * length + z + offset2.y) * zoom2);
-                noiseValue *= Mathf.PerlinNoise((offsetX * width + x) * 0.001f, (offsetY * length + z) * 0.0001f);
+                var noiseValue = Mathf.PerlinNoise((offsetX * WIDTH + x + offset.x) * zoom, (offsetY * LENGTH + z + offset.y) * zoom);
+                noiseValue *= Mathf.PerlinNoise((offsetX * WIDTH + x + offset2.x) * zoom2, (offsetY * LENGTH + z + offset2.y) * zoom2);
+                noiseValue *= Mathf.PerlinNoise((offsetX * WIDTH + x) * 0.001f, (offsetY * LENGTH + z) * 0.0001f);
 
                 // Scale the noiseValue to fit within the height range
-                int heightAtPoint = Mathf.RoundToInt((noiseValue * heightMultiplier) + heightOffset);
+                var heightAtPoint = Mathf.RoundToInt((noiseValue * heightMultiplier) + heightOffset);
 
                 // Set voxels based on height
-                for (int y = 0; y < height; y++)
+                for (var y = 0; y < HEIGHT; y++)
                 {
                     if (y == heightAtPoint)
                     {
                         if (heightAtPoint >= 60)
                         {
                             // Create grass at top and if not submerged
-                            terrain[x, y, z] = new Voxel(2, 1);
+                            terrain[x, y, z] = new(Voxel.IDs.Grass, Voxel.Types.Solid);
                         }
                         else
                         {
                             // If submerged, place dirt instead
-                            terrain[x, y, z] = new Voxel(1, 1);
+                            terrain[x, y, z] = new(Voxel.IDs.Dirt, Voxel.Types.Solid);
                         }
                     }
                     else if (y < heightAtPoint && y > heightAtPoint - 6)
                     {
                         // Dirt
-                        terrain[x, y, z] = new Voxel(1, 1);
+                        terrain[x, y, z] = new(Voxel.IDs.Dirt, Voxel.Types.Solid);
                     }
                     else if (y < heightAtPoint - 5)
                     {
                         // Stone
-                        terrain[x, y, z] = new Voxel(4, 1);
+                        terrain[x, y, z] = new(Voxel.IDs.Stone, Voxel.Types.Solid);
                     }
 
                     else if (y > heightAtPoint && y <= 60)
                     {
                         // Water
-                        terrain[x, y, z] = new Voxel(3, 2);
+                        terrain[x, y, z] = new(Voxel.IDs.Water, Voxel.Types.Liquid);
                     }
 
                     else
                     {
                         // Air
-                        terrain[x, y, z] = new Voxel();
+                        terrain[x, y, z] = new();
                     }
                 }
             }

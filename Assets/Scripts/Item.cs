@@ -7,21 +7,21 @@ namespace Items
         public abstract string ToolTip { get; }
         public virtual int MaxStackSize { get => 64; }
         public abstract byte TextureID { get; }
-        public int amount;
+        public int Amount;
 
         // Method for combining two stacks
         public virtual Item Add(Item item)
         {
-            int newAmount = amount + item.amount;
+            var newAmount = Amount + item.Amount;
 
             if (newAmount > MaxStackSize)
             {
-                int excess = newAmount - MaxStackSize;
-                amount = MaxStackSize;
-                item.amount = excess;
+                var excess = newAmount - MaxStackSize;
+                Amount = MaxStackSize;
+                item.Amount = excess;
                 return item; // Return the excess
             }
-            amount = newAmount;
+            Amount = newAmount;
             return new Nothing();
         }
 
@@ -53,8 +53,8 @@ namespace Items
 
         public override Item UseRight()
         {
-            amount--;
-            if (amount == 0) return new Nothing();
+            Amount--;
+            if (Amount == 0) return new Nothing();
             return this;
         }
     }
@@ -70,11 +70,11 @@ namespace Items
         public abstract byte ToolType { get; }
         public abstract int MaxDurability { get; }
 
-        public int durability;
+        public int Durability;
 
         public override Item UseLeft()
         {
-            durability--;
+            Durability--;
             return this;
         }
     }
@@ -109,37 +109,37 @@ namespace Items
         {
             public override string Name => "Dirt Block";
             public override string ToolTip => "A block of dirt";
-            public override Voxel BlockToPlace => new(1, 1);
+            public override Voxel BlockToPlace => new(Voxel.IDs.Dirt, Voxel.Types.Solid);
         }
         public sealed class Grass : BlockItem
         {
             public override string Name => "Grass Block";
             public override string ToolTip => "A grass block";
-            public override Voxel BlockToPlace => new(2, 1);
+            public override Voxel BlockToPlace => new(Voxel.IDs.Grass, Voxel.Types.Solid);
         }
         public sealed class Stone : BlockItem
         {
             public override string Name => "Stone Block";
             public override string ToolTip => "A block of stone";
-            public override Voxel BlockToPlace => new(4, 1);
+            public override Voxel BlockToPlace => new(Voxel.IDs.Stone, Voxel.Types.Solid);
         }
         public sealed class WoodLog : BlockItem
         {
             public override string Name => "Wood Log";
             public override string ToolTip => "A wood log";
-            public override Voxel BlockToPlace => new(5, 1);
+            public override Voxel BlockToPlace => new(Voxel.IDs.WoodLog, Voxel.Types.Solid);
         }
         public sealed class Cobblestone : BlockItem
         {
             public override string Name => "Cobblestone";
             public override string ToolTip => "A collection of small stones packed tightly";
-            public override Voxel BlockToPlace => new(6, 1);
+            public override Voxel BlockToPlace => new(Voxel.IDs.Cobblestone, Voxel.Types.Solid);
         }
         public sealed class WoodPlanks : BlockItem
         {
             public override string Name => "Wood Planks";
             public override string ToolTip => "A stack of wooden planks";
-            public override Voxel BlockToPlace => new(7, 1);
+            public override Voxel BlockToPlace => new(Voxel.IDs.WoodPlanks, Voxel.Types.Solid);
         }
     }
 

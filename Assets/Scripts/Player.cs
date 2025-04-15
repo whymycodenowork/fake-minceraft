@@ -1,48 +1,45 @@
+using System;
 using Items;
 using UnityEngine;
+
 public class Player : MonoBehaviour
 {
-    public Rigidbody MyRigidbody;
-    public Transform MainCamera;
+    public Rigidbody myRigidbody;
+    public Transform mainCamera;
     public PauseManager pauseManager;
     public InventoryManager inventoryManager;
     public float baseMovementSpeed;
     public float movementSpeed;
     public float jumpHeight;
-    private bool isGrounded;
-    private Vector3 currentVelocity = Vector3.zero;
-    private const int chunkSize = 16;
+    private bool _isGrounded;
+    private Vector3 _currentVelocity = Vector3.zero;
+    private const int CHUNK_SIZE = 16;
     public GameObject indicatorBox;
     public LayerMask groundLayer;
     public float selectDistance = 5;
     public ChunkPool chunkPool;
     public bool canFly;
-    public Voxel selectedBlock = new(6, 1);
+    private Voxel _selectedBlock = new(Voxel.IDs.Cobblestone, Voxel.Types.Solid);
 
     // Start is called before the first frame update
-    void Start()
+    private void Start()
     {
         // Disable the box at start
         indicatorBox.SetActive(false);
     }
 
     // Update is called once per frame
-    void Update()
+    private void FixedUpdate()
     {
-        Vector3 targetVelocity = Vector3.SmoothDamp(MyRigidbody.linearVelocity, Vector3.zero, ref currentVelocity, 0.2f);
-        MyRigidbody.linearVelocity = new Vector3(targetVelocity.x, MyRigidbody.linearVelocity.y, targetVelocity.z);
-        if (pauseManager.isPaused || inventoryManager.inventoryOpen) return; // Disable movement and other interactions if a menu is open
-        Item selectedItem = inventoryManager.hotbarItems[(int)Mathf.Round(inventoryManager.hotbarSlot)];
-        if (selectedItem is Nothing) selectedBlock = new Voxel(0, 0);
-        if (selectedItem is BlockItem blockItem)
-        {
-            selectedBlock = blockItem.BlockToPlace;
-        }
+        var targetVelocity = Vector3.SmoothDamp(myRigidbody.linearVelocity, Vector3.zero, ref _currentVelocity, 0.2f);
+        myRigidbody.linearVelocity = new(targetVelocity.x, myRigidbody.linearVelocity.y, targetVelocity.z);
+        if (pauseManager.isPaused || inventoryManager.inventoryOpen)
+            return; // Disable movement and other interactions if a menu is open
         MovePlayer();
-        
+
         if (Input.GetKeyDown(KeyCode.R))
         {
-            MyRigidbody.linearVelocity = Vector3.zero;
+            myRigidbody.linearVelocity = Vector3.zero;
             transform.position = Vector3.zero;
         }
 
@@ -65,44 +62,55 @@ public class Player : MonoBehaviour
         {
             movementSpeed = baseMovementSpeed;
         }
-        /*
-        Vector2Int currentChunkPos = GetChunkPosition(transform.position, out Vector3 n);
-        if (!chunkPool.activeChunks.ContainsKey(currentChunkPos))
-        { 
-            MyRigidbody.velocity = Vector3.zero;
-            Debug.LogWarning("out of bounds!");
-        }
-        else if (chunkPool.activeChunks[new Vector2Int(currentChunkPos.x, currentChunkPos.y)].GetComponent<Chunk>().HasMesh)
+        var currentChunkPos = GetChunkPosition(transform.position, out var _);
+        if (!chunkPool.ActiveChunks.ContainsKey(currentChunkPos))
         {
-            MyRigidbody.velocity = Vector3.zero;
-            Debug.LogWarning("out of bounds!");
+            myRigidbody.linearVelocity = Vector3.zero;
         }
-        */
+        else if (!chunkPool.ActiveChunks[new(currentChunkPos.x, currentChunkPos.y)].HasMesh)
+        {
+            myRigidbody.linearVelocity = Vector3.zero;
+        }
+        else
+        {
+            myRigidbody.WakeUp();
+        }
+    }
+    
+    private void Update()
+    {
+        var selectedItem = inventoryManager.HotbarItems[(int)Mathf.Round(inventoryManager.hotbarSlot)];
+        _selectedBlock = selectedItem switch
+        {
+            Nothing => new(0),
+            BlockItem blockItem => blockItem.BlockToPlace,
+            _ => _selectedBlock
+        };
         DetectInteractions();
     }
 
-    void MovePlayer()
+    private void MovePlayer()
     {
-        Vector3 movementDirection = Vector3.zero;
+        var movementDirection = Vector3.zero;
 
         if (Input.GetKey(KeyCode.W))
         {
-            movementDirection += MainCamera.transform.forward;
+            movementDirection += mainCamera.transform.forward;
         }
 
         if (Input.GetKey(KeyCode.S))
         {
-            movementDirection -= MainCamera.transform.forward;
+            movementDirection -= mainCamera.transform.forward;
         }
 
         if (Input.GetKey(KeyCode.A))
         {
-            movementDirection -= MainCamera.transform.right;
+            movementDirection -= mainCamera.transform.right;
         }
 
         if (Input.GetKey(KeyCode.D))
         {
-            movementDirection += MainCamera.transform.right;
+            movementDirection += mainCamera.transform.right;
         }
 
         if (movementDirection == Vector3.zero)
@@ -111,48 +119,40 @@ public class Player : MonoBehaviour
         }
 
         movementDirection.y = 0; // Make movement horizontal
-        movementDirection.Normalize(); // No square root of 2 times extra speed when holding 2 keys 
+        movementDirection.Normalize(); // No square root of 2 times extra speed when holding 2 keys at once
 
-        MyRigidbody.linearVelocity += movementDirection * movementSpeed;
+        myRigidbody.linearVelocity += movementDirection * movementSpeed;
     }
 
-    void HandleJump()
+    private void HandleJump()
     {
-        isGrounded = Physics.Raycast(transform.position, Vector3.down, 1.01f, groundLayer);
-        if (isGrounded)
+        _isGrounded = Physics.Raycast(transform.position, Vector3.down, 1.01f, groundLayer);
+        if (!_isGrounded) return;
+        var velocity = myRigidbody.linearVelocity;
+        myRigidbody.linearVelocity = new(velocity.x, jumpHeight, velocity.z);
+    }
+
+    private void HandleFly(string direction)
+    {
+        switch (direction)
         {
-            Vector3 velocity = MyRigidbody.linearVelocity;
-            MyRigidbody.linearVelocity = new Vector3(velocity.x, jumpHeight, velocity.z);
+            case "up":
+                myRigidbody.linearVelocity += Vector3.up * jumpHeight;
+                break;
+            case "down":
+                myRigidbody.linearVelocity += Vector3.down * jumpHeight;
+                break;
         }
     }
 
-    void HandleFly(string direction)
+    // ReSharper disable Unity.PerformanceAnalysis
+    private void DetectInteractions()
     {
-        if (direction == "up")
-        {
-            MyRigidbody.linearVelocity += Vector3.up * jumpHeight;
-        }
-        else if (direction == "down")
-        {
-            MyRigidbody.linearVelocity += Vector3.down * jumpHeight;
-        }
-    }
-
-    void DetectInteractions()
-    {
-        Ray ray = new(MainCamera.transform.position, MainCamera.forward);
-        if (Physics.Raycast(ray, out RaycastHit hit, selectDistance, groundLayer))
+        Ray ray = new(mainCamera.transform.position, mainCamera.forward);
+        if (Physics.Raycast(ray, out var hit, selectDistance, groundLayer))
         {
             // Get the hit location and adjust based on hit normal to avoid incorrect rounding
-            Vector3 hitPointAdjusted;
-            if (Input.GetMouseButton(1))
-            {
-                hitPointAdjusted = hit.point + hit.normal * 0.5f;
-            }
-            else
-            {
-                hitPointAdjusted = hit.point + -hit.normal * 0.5f;
-            }
+            Vector3 hitPointAdjusted = hit.point - hit.normal * 0.5f;
 
             // Round the hit point adjusted to the nearest integer
             Vector3Int roundedHitPoint = new(
@@ -161,7 +161,6 @@ public class Player : MonoBehaviour
                 Mathf.RoundToInt(hitPointAdjusted.z)
             );
 
-            // Move the indicator box to the adjusted hit location
             indicatorBox.transform.position = roundedHitPoint;
 
             // Enable the box if it was disabled
@@ -170,11 +169,11 @@ public class Player : MonoBehaviour
                 indicatorBox.SetActive(true);
             }
 
-            if (Input.GetMouseButton(0))
+            if (Input.GetMouseButtonDown(0))
                 Interact(0, roundedHitPoint);
-            else if (Input.GetMouseButton(1))
-                Interact(1, roundedHitPoint);
-            else if (Input.GetMouseButton(2))
+            else if (Input.GetMouseButtonDown(1))
+                Interact(1, roundedHitPoint + new Vector3Int((int)hit.normal.x, (int)hit.normal.y, (int)hit.normal.z));
+            else if (Input.GetMouseButtonDown(2))
                 Interact(2, roundedHitPoint);
         }
         else
@@ -187,54 +186,49 @@ public class Player : MonoBehaviour
         }
     }
 
-    void Interact(int mouseButton, Vector3Int position)
+    private void Interact(int mouseButton, Vector3Int position)
     {
-        Vector2Int chunkCoords = GetChunkPosition(position, out Vector3 localPosition);
+        var chunkCoords = GetChunkPosition(position, out var localPosition);
 
         // Ensure the position is within chunk bounds before interacting
-        if (chunkPool.activeChunks.TryGetValue(chunkCoords, out GameObject hitChunk))
+        if (!chunkPool.ActiveChunks.TryGetValue(chunkCoords, out var chunkScript)) return;
+        var chunkVoxels = chunkScript.Voxels;
+
+        switch (mouseButton)
         {
-            Chunk chunkScript = hitChunk.GetComponent<Chunk>();
-            Voxel[,,] chunkVoxels = chunkScript.voxels;
+            case 0: // Left-click: Remove voxel
 
-            switch (mouseButton)
-            {
-                case 0: // Left-click: Remove voxel
-
-                    Voxel voxel = chunkVoxels[(int)localPosition.x, (int)localPosition.y, (int)localPosition.z];
-                    if (voxel.type == 0) break;
-                    // Debug.Log($"Deleted {voxel}");
-                    chunkVoxels[(int)localPosition.x, (int)localPosition.y, (int)localPosition.z].type = 0;
-                    chunkScript.UpdateMeshLocal((int)localPosition.x, (int)localPosition.z);
-                    break;
-                case 1: // Right-click: Place voxel
-                    chunkVoxels[(int)localPosition.x, (int)localPosition.y, (int)localPosition.z] = selectedBlock;
-                    chunkScript.UpdateMeshLocal((int)localPosition.x, (int)localPosition.z);
-                    break;
-                case 2:
-                    selectedBlock = chunkVoxels[(int)localPosition.x, (int)localPosition.y, (int)localPosition.z];
-                    break;
-                default:
-                    break;
-            }
+                var voxel = chunkVoxels[(int)localPosition.x, (int)localPosition.y, (int)localPosition.z];
+                if (voxel.Type == 0) break;
+                // Debug.Log($"Deleted {voxel}");
+                chunkVoxels[(int)localPosition.x, (int)localPosition.y, (int)localPosition.z].Destroy();
+                chunkScript.UpdateMeshLocal((int)localPosition.x, (int)localPosition.z);
+                break;
+            case 1: // Right-click: Place voxel
+                chunkVoxels[(int)localPosition.x, (int)localPosition.y, (int)localPosition.z] = _selectedBlock;
+                chunkScript.UpdateMeshLocal((int)localPosition.x, (int)localPosition.z);
+                break;
+            case 2:
+                _selectedBlock = chunkVoxels[(int)localPosition.x, (int)localPosition.y, (int)localPosition.z];
+                break;
         }
     }
 
-    Vector2Int GetChunkPosition(Vector3 location, out Vector3 localPosition)
+    private static Vector2Int GetChunkPosition(Vector3 location, out Vector3 localPosition)
     {
         // Calculate chunk coordinates
-        int chunkX = Mathf.FloorToInt(location.x / chunkSize);
-        int chunkZ = Mathf.FloorToInt(location.z / chunkSize);
+        var chunkX = Mathf.FloorToInt(location.x / CHUNK_SIZE);
+        var chunkZ = Mathf.FloorToInt(location.z / CHUNK_SIZE);
 
         // Calculate local position within the chunk
-        float localX = location.x % chunkSize;
-        float localZ = location.z % chunkSize;
+        var localX = location.x % CHUNK_SIZE;
+        var localZ = location.z % CHUNK_SIZE;
 
         // Ensure the local position is positive
-        if (localX < 0) localX += chunkSize;
-        if (localZ < 0) localZ += chunkSize;
+        if (localX < 0) localX += CHUNK_SIZE;
+        if (localZ < 0) localZ += CHUNK_SIZE;
 
-        localPosition = new Vector3(localX, location.y, localZ);
-        return new Vector2Int(chunkX, chunkZ);
+        localPosition = new(localX, location.y, localZ);
+        return new(chunkX, chunkZ);
     }
 }
