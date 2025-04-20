@@ -6,7 +6,7 @@ using UnityEngine;
 public static class ClearSave
 {
     // Path of the folder to be cleared (relative to the Assets directory)
-    private static readonly string folderPath = Path.Combine(Application.persistentDataPath, "SaveData/SaveFile1");
+    private static readonly string folderPath = Path.Combine(Application.persistentDataPath, "SaveFile1");
 
     [MenuItem("Tools/Clear Save Data")]
     private static void ClearFolder()

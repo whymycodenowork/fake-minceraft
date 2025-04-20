@@ -10,28 +10,41 @@ public class TerrainGenerator : MonoBehaviour
     public float zoom2;
     public float heightMultiplier;
 
-    private const int WIDTH = 16;
-    private const int HEIGHT = 255;
-    private const int LENGTH = 16;
+    // singleton
+    public static TerrainGenerator Instance { get; private set; }
 
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+    }
     public Voxel[,,] GenerateTerrain(int offsetX, int offsetY)
     {
-        var terrain = new Voxel[WIDTH, HEIGHT, LENGTH];
+        Voxel[,,] terrain = new Voxel[Chunk.chunkSize, Chunk.chunkSize, Chunk.chunkSize];
 
-        for (var x = 0; x < WIDTH; x++)
+        for (int x = 0; x < Chunk.chunkSize; x++)
         {
-            for (var z = 0; z < LENGTH; z++)
+            for (int z = 0; z < Chunk.chunkSize; z++)
             {
-                var noiseValue = Mathf.PerlinNoise((offsetX * WIDTH + x + offset.x) * zoom, (offsetY * LENGTH + z + offset.y) * zoom);
-                noiseValue *= Mathf.PerlinNoise((offsetX * WIDTH + x + offset2.x) * zoom2, (offsetY * LENGTH + z + offset2.y) * zoom2);
-                noiseValue *= Mathf.PerlinNoise((offsetX * WIDTH + x) * 0.001f, (offsetY * LENGTH + z) * 0.0001f);
+
+                float noiseValue = Mathf.PerlinNoise(((offsetX * Chunk.chunkSize) + x + offset.x) * zoom, ((offsetY * Chunk.chunkSize) + z + offset.y) * zoom);
+                noiseValue *= Mathf.PerlinNoise(((offsetX * Chunk.chunkSize) + x + offset2.x) * zoom2, ((offsetY * Chunk.chunkSize) + z + offset2.y) * zoom2);
+                noiseValue *= Mathf.PerlinNoise(((offsetX * Chunk.chunkSize) + x) * 0.001f, ((offsetY * Chunk.chunkSize) + z) * 0.0001f);
+
 
                 // Scale the noiseValue to fit within the height range
-                var heightAtPoint = Mathf.RoundToInt((noiseValue * heightMultiplier) + heightOffset);
+                int heightAtPoint = Mathf.RoundToInt((noiseValue * heightMultiplier) + heightOffset);
 
                 // Set voxels based on height
-                for (var y = 0; y < HEIGHT; y++)
+
+                for (int y = 0; y < Chunk.chunkSize; y++)
                 {
+
                     if (y == heightAtPoint)
                     {
                         if (heightAtPoint >= 60)

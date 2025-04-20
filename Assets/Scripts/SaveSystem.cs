@@ -1,23 +1,23 @@
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.IO;
 using UnityEngine;
 
 public static class SaveSystem
 {
-    private static readonly Dictionary<Vector2Int, Voxel[,,]> chunkCache = new();
+    private static readonly ConcurrentDictionary<Vector3Int, Voxel[,,]> chunkCache = new();
     public static float saveInterval = 300f; // Save to disk every once in a while
     private static float _saveTimer;
 
     public static string saveDataPath; // Needs to be initialized elsewhere
 
-    private static string GetSaveFilePath(Vector2Int coord)
+    private static string GetSaveFilePath(Vector3Int coord)
     {
         var saveFolderPath = Path.Combine(saveDataPath, "SaveFile1");
         if (!Directory.Exists(saveFolderPath))
         {
             Directory.CreateDirectory(saveFolderPath);
         }
-        return Path.Combine(saveFolderPath, $"chunk_{coord.x}_{coord.y}.dat");
+        return Path.Combine(saveFolderPath, $"chunk_{coord.x}_{coord.y}_{coord.z}.dat");
     }
 
     // Save chunk to disk
@@ -31,11 +31,11 @@ public static class SaveSystem
         using FileStream stream = new(path, FileMode.Create, FileAccess.Write, FileShare.None, 4096);
         using BinaryWriter writer = new(stream);
         
-        for (var i = 0; i < 16; i++)
+        for (var i = 0; i < Chunk.chunkSize; i++)
         {
-            for (var j = 0; j < 255; j++)
+            for (var j = 0; j < Chunk.chunkSize; j++)
             {
-                for (var k = 0; k < 16; k++)
+                for (var k = 0; k < Chunk.chunkSize; k++)
                 {
                     writer.Write((byte)voxels[i, j, k].ID);
                     writer.Write((byte)voxels[i, j, k].Type);
@@ -50,13 +50,13 @@ public static class SaveSystem
         using FileStream stream = new(path, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.Asynchronous);
         using BinaryReader reader = new(stream);
         
-        voxels = new Voxel[16, 255, 16];
+        voxels = new Voxel[Chunk.chunkSize, Chunk.chunkSize, Chunk.chunkSize];
 
-        for (var i = 0; i < 16; i++)
+        for (var i = 0; i < Chunk.chunkSize; i++)
         {
-            for (var j = 0; j < 255; j++)
+            for (var j = 0; j < Chunk.chunkSize; j++)
             {
-                for (var k = 0; k < 16; k++)
+                for (var k = 0; k < Chunk.chunkSize; k++)
                 {
                     var id = reader.ReadByte();
                     var type = reader.ReadByte();
@@ -67,7 +67,7 @@ public static class SaveSystem
     }
 
     // Save chunk to RAM
-    public static void SaveChunk(Vector2Int coord, Voxel[,,] voxels)
+    public static void SaveChunk(Vector3Int coord, Voxel[,,] voxels)
     {
         if (voxels == null)
         {
@@ -78,7 +78,7 @@ public static class SaveSystem
     }
 
     // Load chunk
-    public static void LoadChunk(Vector2Int coord, out Voxel[,,] voxels)
+    public static void LoadChunk(Vector3Int coord, out Voxel[,,] voxels)
     {
         if (chunkCache.TryGetValue(coord, out voxels))
         {

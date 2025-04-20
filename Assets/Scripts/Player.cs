@@ -1,6 +1,7 @@
 using System;
 using Items;
 using UnityEngine;
+using static UnityEngine.Rendering.DebugUI;
 
 public class Player : MonoBehaviour
 {
@@ -13,7 +14,6 @@ public class Player : MonoBehaviour
     public float jumpHeight;
     private bool _isGrounded;
     private Vector3 _currentVelocity = Vector3.zero;
-    private const int CHUNK_SIZE = 16;
     public GameObject indicatorBox;
     public LayerMask groundLayer;
     public float selectDistance = 5;
@@ -62,7 +62,7 @@ public class Player : MonoBehaviour
         {
             movementSpeed = baseMovementSpeed;
         }
-        var currentChunkPos = GetChunkPosition(transform.position, out var _);
+        var currentChunkPos = GetChunkPosition(new Vector3Int((int)transform.position.x, (int)transform.position.y, (int)transform.position.z), out var _);
         if (!chunkPool.ActiveChunks.ContainsKey(currentChunkPos))
         {
             myRigidbody.linearVelocity = Vector3.zero;
@@ -82,7 +82,7 @@ public class Player : MonoBehaviour
         var selectedItem = inventoryManager.HotbarItems[(int)Mathf.Round(inventoryManager.hotbarSlot)];
         _selectedBlock = selectedItem switch
         {
-            Nothing => new(0),
+            Air => new(0),
             BlockItem blockItem => blockItem.BlockToPlace,
             _ => _selectedBlock
         };
@@ -169,7 +169,7 @@ public class Player : MonoBehaviour
                 indicatorBox.SetActive(true);
             }
 
-            if (Input.GetMouseButtonDown(0))
+            if (Input.GetMouseButton(0))
                 Interact(0, roundedHitPoint);
             else if (Input.GetMouseButtonDown(1))
                 Interact(1, roundedHitPoint + new Vector3Int((int)hit.normal.x, (int)hit.normal.y, (int)hit.normal.z));
@@ -198,37 +198,40 @@ public class Player : MonoBehaviour
         {
             case 0: // Left-click: Remove voxel
 
-                var voxel = chunkVoxels[(int)localPosition.x, (int)localPosition.y, (int)localPosition.z];
+                var voxel = chunkVoxels[localPosition.x, localPosition.y, localPosition.z];
                 if (voxel.Type == 0) break;
                 // Debug.Log($"Deleted {voxel}");
-                chunkVoxels[(int)localPosition.x, (int)localPosition.y, (int)localPosition.z].Destroy();
-                chunkScript.UpdateMeshLocal((int)localPosition.x, (int)localPosition.z);
+                chunkVoxels[localPosition.x, localPosition.y, localPosition.z].DealDamage(0.1f);
+                chunkScript.UpdateMeshLocal(localPosition.x, localPosition.y, localPosition.z);
                 break;
             case 1: // Right-click: Place voxel
-                chunkVoxels[(int)localPosition.x, (int)localPosition.y, (int)localPosition.z] = _selectedBlock;
-                chunkScript.UpdateMeshLocal((int)localPosition.x, (int)localPosition.z);
+                chunkVoxels[localPosition.x, localPosition.y, localPosition.z] = _selectedBlock;
+                chunkScript.UpdateMeshLocal(localPosition.x, localPosition.y, localPosition.z);
                 break;
             case 2:
-                _selectedBlock = chunkVoxels[(int)localPosition.x, (int)localPosition.y, (int)localPosition.z];
+                _selectedBlock = chunkVoxels[localPosition.x, localPosition.y, localPosition.z];
                 break;
         }
     }
 
-    private static Vector2Int GetChunkPosition(Vector3 location, out Vector3 localPosition)
+    private static Vector3Int GetChunkPosition(Vector3Int location, out Vector3Int localPosition)
     {
         // Calculate chunk coordinates
-        var chunkX = Mathf.FloorToInt(location.x / CHUNK_SIZE);
-        var chunkZ = Mathf.FloorToInt(location.z / CHUNK_SIZE);
+        var chunkX = Mathf.FloorToInt(location.x / Chunk.chunkSize);
+        var chunkY = Mathf.FloorToInt(location.y / Chunk.chunkSize);
+        var chunkZ = Mathf.FloorToInt(location.z / Chunk.chunkSize);
 
         // Calculate local position within the chunk
-        var localX = location.x % CHUNK_SIZE;
-        var localZ = location.z % CHUNK_SIZE;
+        var localX = location.x % Chunk.chunkSize;
+        var localY = location.y % Chunk.chunkSize;
+        var localZ = location.z % Chunk.chunkSize;
 
         // Ensure the local position is positive
-        if (localX < 0) localX += CHUNK_SIZE;
-        if (localZ < 0) localZ += CHUNK_SIZE;
+        if (localX < 0) localX += Chunk.chunkSize;
+        if (localY < 0) localY += Chunk.chunkSize;
+        if (localZ < 0) localZ += Chunk.chunkSize;
 
-        localPosition = new(localX, location.y, localZ);
-        return new(chunkX, chunkZ);
+        localPosition = new(localX, localY, localZ);
+        return new(chunkX, chunkY, chunkZ);
     }
 }

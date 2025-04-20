@@ -2,14 +2,16 @@ public struct Voxel
 {
     public IDs ID { get; set; }
     public Types Type { get; set; }
-    public float Health;
-    public float Defence;
+    public float Health { get; set; }
+    public float Defence { get; set; }
 
-    public Voxel(IDs id = IDs.Air, Types type = 0, float defence = 0f)
+    public readonly bool IsActive => Type != Types.Air;
+
+    public Voxel(IDs id = IDs.Air, Types type = Types.Air, float defence = 0f, float health = 1f)
     {
         this.ID = id;
         this.Type = type;
-        Health = 100;
+        Health = health;
         this.Defence = defence;
     }
     public void Destroy()

@@ -3,8 +3,17 @@ using UnityEngine;
 public static class ChunkUtils
 {
     /// <summary>
-    ///      Gets the voxel and it's relevant information in a certain direction of an element of a chunk's voxel array
+    /// Gets the voxel and it's relevant information in a certain direction of an element of a chunk's voxel array
     /// </summary>
+    /// <param name="chunk"></param>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    /// <param name="z"></param>
+    /// <param name="direction"></param>
+    /// <param name="nextVoxel"></param>
+    /// <param name="nextPosition"></param>
+    /// <param name="nextChunkPos"></param>
+    /// <returns></returns>
     public static bool CheckNextVoxel(Chunk chunk, int x, int y, int z, Vector3 direction, out Voxel nextVoxel, out Vector3Int nextPosition, out Vector2Int nextChunkPos)
     {
         int newX = x + (int)direction.x;
@@ -25,7 +34,7 @@ public static class ChunkUtils
 
         if (isOutOfBounds)
         {
-            if (chunk.chunkPool.ActiveChunks.TryGetValue(new(chunk.x + (int)direction.x, chunk.y + (int)direction.z), out Chunk nextChunkScript))
+            if (ChunkPool.Instance.ActiveChunks.TryGetValue(new(chunk.position.x + (int)direction.x, chunk.position.y + (int)direction.z), out Chunk nextChunkScript))
             {
                 newX = (newX + 16) % 16;
                 newZ = (newZ + 16) % 16;
@@ -39,7 +48,7 @@ public static class ChunkUtils
                     return false;
                 }
                 nextVoxel = nextChunkVoxels[newX, y, newZ];
-                nextChunkPos = new(nextChunkScript.x, nextChunkScript.y);
+                nextChunkPos = new(nextChunkScript.position.x, nextChunkScript.position.y);
                 return true;
             }
             nextPosition = Vector3Int.zero;
@@ -47,38 +56,13 @@ public static class ChunkUtils
             nextChunkPos = Vector2Int.zero;
             return false;
         }
-
+        if (chunk.Voxels == null)
+        {
+            Debug.LogWarning("as87dyhoaleghq9o8shfolpashfoaeuhalsxjfghao");
+        }
         nextPosition = new(newX, newY, newZ);
         nextVoxel = chunk.Voxels[newX, newY, newZ];
-        nextChunkPos = new(chunk.x, chunk.y);
+        nextChunkPos = new(chunk.position.x, chunk.position.y);
         return true;
-    }
-
-    // Converts world position to local voxel coordinates within a chunk.
-    public static Vector3Int WorldToVoxel(Vector3 worldPosition)
-    {
-        int x = Mathf.FloorToInt(worldPosition.x) % 16;
-        int y = Mathf.FloorToInt(worldPosition.y);
-        int z = Mathf.FloorToInt(worldPosition.z) % 16;
-
-        if (x < 0)
-        {
-            x += 16;
-        }
-
-        if (z < 0)
-        {
-            z += 16;
-        }
-
-        return new Vector3Int(x, y, z);
-    }
-
-    // Converts world position to chunk coordinates.
-    public static Vector2Int WorldToChunk(Vector3 worldPosition)
-    {
-        int x = Mathf.FloorToInt(worldPosition.x / 16);
-        int y = Mathf.FloorToInt(worldPosition.z / 16); // Using z for chunk grid instead of y to align with world space
-        return new Vector2Int(x, y);
     }
 }
