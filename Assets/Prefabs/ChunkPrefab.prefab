@@ -9,11 +9,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4634320819922445880}
-  - component: {fileID: 6634375450387806704}
   - component: {fileID: 1850206645233367375}
   - component: {fileID: 6244095485613848735}
   - component: {fileID: 33182908857174830}
-  - component: {fileID: 8458058358989818971}
+  - component: {fileID: 7859584082541116445}
   m_Layer: 0
   m_Name: ChunkPrefab
   m_TagString: Untagged
@@ -36,26 +35,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6634375450387806704
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9059245294083506208}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9bf8831e5c7a5204c9bcf1983ca2541b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  terrainGenerator: {fileID: 0}
-  chunkPool: {fileID: 0}
-  x: 0
-  y: 0
-  isDirty: 0
-  meshFilter: {fileID: 0}
-  meshCollider: {fileID: 0}
-  meshRenderer: {fileID: 0}
 --- !u!33 &1850206645233367375
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -116,7 +95,7 @@ MeshCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 9059245294083506208}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: 4f062648687e2cd429b14dc3517b5646, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -131,7 +110,7 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 0}
---- !u!114 &8458058358989818971
+--- !u!114 &7859584082541116445
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -140,6 +119,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 9059245294083506208}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: acc57031bc7bc694e8bbf019d1fab0f9, type: 3}
+  m_Script: {fileID: 11500000, guid: 9bf8831e5c7a5204c9bcf1983ca2541b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  meshFilter: {fileID: 1850206645233367375}
+  meshRenderer: {fileID: 6244095485613848735}
+  meshCollider: {fileID: 33182908857174830}
+  material: {fileID: 0}
+  vertices: []
+  triangles: 
+  uvs: []
+  isDirty: 1
