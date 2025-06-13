@@ -4,7 +4,6 @@ using UnityEngine;
 public static class TextureManager
 {
     public static readonly Material material; // Texture atlas for blocks
-    public static readonly Texture2D[] BlockItemTextures; // Textures for BlockItems (does not exist yet)
     public static readonly Texture2D[] ItemTextures; // Textures for Items
     public static readonly int atlasSize;
 
@@ -12,9 +11,9 @@ public static class TextureManager
     {
         // Load all textures in Resources/Textures
         var texture = Resources.Load<Texture2D>("TextureAtlas");
-        BlockItemTextures = Resources.LoadAll<Texture2D>("Textures");
+        var textures = Resources.LoadAll<Texture2D>("Images");
 
-        atlasSize = BlockItemTextures.Length;
+        atlasSize = textures.Length;
 
         material = new(Shader.Find("Standard"))
         {

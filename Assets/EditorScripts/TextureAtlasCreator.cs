@@ -8,20 +8,15 @@ public class TextureAtlasCreator : MonoBehaviour
     [MenuItem("Tools/Create Texture Atlas")]
     public static void CreateTextureAtlas()
     {
-        var imagesFolderPath = "Assets/Resources/Textures";
+        var imagesFolderPath = "Assets/Resources/Images";
         var texturesFolderPath = "Assets/Resources";
-
-        if (!Directory.Exists(texturesFolderPath))
-        {
-            Directory.CreateDirectory(texturesFolderPath);
-        }
 
         var imagePaths = Directory.GetFiles(imagesFolderPath, "*.png");
 
         // Determine how many textures we have and the dimensions for the atlas
         int textureCount = imagePaths.Length;
         int atlasHeight = textureCount * 16; // Each texture is 16px tall
-        int atlasWidth = 16; // The width will remain 16px (because each texture is 16x16)
+        int atlasWidth = 128;
 
         // Create a new texture to hold the atlas
         Texture2D textureAtlas = new(atlasWidth, atlasHeight);
@@ -32,12 +27,6 @@ public class TextureAtlasCreator : MonoBehaviour
         {
             var imageName = Path.GetFileNameWithoutExtension(imagePath);
             var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(imagePath);
-
-            if (texture.width != 16 || texture.height != 16)
-            {
-                Debug.LogWarning($"Texture {imageName} is not 16x16. Skipping.");
-                continue;
-            }
 
             // Copy the pixels of the current texture into the atlas at the correct position
             textureAtlas.SetPixels(0, yOffset, texture.width, texture.height, texture.GetPixels());

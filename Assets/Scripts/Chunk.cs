@@ -4,19 +4,27 @@ using UnityEditorInternal;
 
 public class Chunk : MonoBehaviour
 {
-    public const int CHUNK_SIZE = 16;
+    /// <summary>
+    /// The side length of the chunk in blocks.
+    /// </summary>
+    public const int CHUNK_SIZE = 32; // DO NOT CHANGE
     public Block[,,] Blocks = new Block[CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE];
+
+    /// <summary>
+    /// The chunk coordinates of the chunk.
+    /// </summary>
+    public Vector3Int position;
 
     public MeshFilter meshFilter;
     public MeshRenderer meshRenderer;
     public MeshCollider meshCollider;
 
-    private List<Vector3> vertices = new();
-    private List<int> triangles = new();
-    private List<Vector2> uvs = new();
+    private readonly List<Vector3> vertices = new();
+    private readonly List<int> triangles = new();
+    private readonly List<Vector2> uvs = new();
 
     /// <summary>
-    /// Flag to indicate if the mesh needs to be updated
+    /// Flag to indicate if the mesh needs to be updated.
     /// </summary>
     public bool isDirty = true;
 
@@ -24,21 +32,16 @@ public class Chunk : MonoBehaviour
     {
         meshFilter.sharedMesh = new Mesh();
         meshRenderer.sharedMaterial = TextureManager.material;
-        meshCollider.sharedMesh = meshFilter.sharedMesh;
     }
 
     private void Start()
     {
-        for (int x = 0; x < CHUNK_SIZE; x++)
-        {
-            for (int y = 0; y < CHUNK_SIZE; y++)
-            {
-                for (int z = 0; z < CHUNK_SIZE; z++)
-                {
-                    Blocks[x, y, z] = new Block { id = 1 }; // Placeholder for actual terrain generation logic
-                }
-            }
-        }
+        TerrainGenerator.Instance.GenerateTerrain(Blocks, position);
+    }
+
+    private void OnEnable()
+    {
+        transform.position = position * Chunk.CHUNK_SIZE; // Set the position of the chunk based on its coordinates
     }
 
     private void Update()
@@ -78,7 +81,7 @@ public class Chunk : MonoBehaviour
                     for (int i = 0; i < 6; i++) // Check all 6 faces of the block
                     {
                         Vector3Int dir = directions[i];
-                        if (IsFaceVisible(pos, dir)) AddQuad(pos, dir, block.id);
+                        if (IsFaceVisible(pos, dir)) AddQuad(pos, dir, block.id, i);
                     }
                 }
             }
@@ -94,53 +97,53 @@ public class Chunk : MonoBehaviour
 
         mesh.RecalculateBounds();
         mesh.RecalculateNormals();
+
+        meshCollider.sharedMesh = mesh;
     }
 
-    private void AddQuad(Vector3Int pos, Vector3Int dir, int id)
+    private void AddQuad(Vector3Int pos, Vector3Int dir, int id, int i)
     {
         if (dir == Vector3Int.up)
         {
-            // +y face
-            vertices.Add(pos + new Vector3(-0.5f, 0.5f, 0.5f)); // bl
-            vertices.Add(pos + new Vector3(0.5f, 0.5f, 0.5f)); // br
-            vertices.Add(pos + new Vector3(-0.5f, 0.5f, -0.5f)); // tl
-            vertices.Add(pos + new Vector3(0.5f, 0.5f, -0.5f)); // tr
+            vertices.Add(pos + new Vector3(-0.5f, 0.5f, 0.5f));
+            vertices.Add(pos + new Vector3(0.5f, 0.5f, 0.5f));
+            vertices.Add(pos + new Vector3(-0.5f, 0.5f, -0.5f));
+            vertices.Add(pos + new Vector3(0.5f, 0.5f, -0.5f));
         }
         else if (dir == Vector3Int.down)
         {
-            // -y face
-            vertices.Add(pos + new Vector3(-0.5f, -0.5f, -0.5f)); // bl
-            vertices.Add(pos + new Vector3(0.5f, -0.5f, -0.5f)); // br
-            vertices.Add(pos + new Vector3(-0.5f, -0.5f, 0.5f)); // tl
-            vertices.Add(pos + new Vector3(0.5f, -0.5f, 0.5f)); // tr
+            vertices.Add(pos + new Vector3(-0.5f, -0.5f, -0.5f));
+            vertices.Add(pos + new Vector3(0.5f, -0.5f, -0.5f));
+            vertices.Add(pos + new Vector3(-0.5f, -0.5f, 0.5f));
+            vertices.Add(pos + new Vector3(0.5f, -0.5f, 0.5f));
         }
-        else if (dir == Vector3Int.forward)  // +z
+        else if (dir == Vector3Int.forward)
         {
-            vertices.Add(pos + new Vector3(-0.5f, -0.5f, 0.5f)); // bl
-            vertices.Add(pos + new Vector3(0.5f, -0.5f, 0.5f)); // br
-            vertices.Add(pos + new Vector3(-0.5f, 0.5f, 0.5f)); // tl
-            vertices.Add(pos + new Vector3(0.5f, 0.5f, 0.5f)); // tr
+            vertices.Add(pos + new Vector3(-0.5f, -0.5f, 0.5f));
+            vertices.Add(pos + new Vector3(0.5f, -0.5f, 0.5f));
+            vertices.Add(pos + new Vector3(-0.5f, 0.5f, 0.5f));
+            vertices.Add(pos + new Vector3(0.5f, 0.5f, 0.5f));
         }
-        else if (dir == Vector3Int.back)     // -z
+        else if (dir == Vector3Int.back)
         {
-            vertices.Add(pos + new Vector3(0.5f, -0.5f, -0.5f)); // bl
-            vertices.Add(pos + new Vector3(-0.5f, -0.5f, -0.5f)); // br
-            vertices.Add(pos + new Vector3(0.5f, 0.5f, -0.5f)); // tl
-            vertices.Add(pos + new Vector3(-0.5f, 0.5f, -0.5f)); // tr
+            vertices.Add(pos + new Vector3(0.5f, -0.5f, -0.5f));
+            vertices.Add(pos + new Vector3(-0.5f, -0.5f, -0.5f));
+            vertices.Add(pos + new Vector3(0.5f, 0.5f, -0.5f));
+            vertices.Add(pos + new Vector3(-0.5f, 0.5f, -0.5f));
         }
-        else if (dir == Vector3Int.left)     // -x
+        else if (dir == Vector3Int.left)
         {
-            vertices.Add(pos + new Vector3(-0.5f, -0.5f, -0.5f)); // bl
-            vertices.Add(pos + new Vector3(-0.5f, -0.5f, 0.5f)); // br
-            vertices.Add(pos + new Vector3(-0.5f, 0.5f, -0.5f)); // tl
-            vertices.Add(pos + new Vector3(-0.5f, 0.5f, 0.5f)); // tr
+            vertices.Add(pos + new Vector3(-0.5f, -0.5f, -0.5f));
+            vertices.Add(pos + new Vector3(-0.5f, -0.5f, 0.5f));
+            vertices.Add(pos + new Vector3(-0.5f, 0.5f, -0.5f));
+            vertices.Add(pos + new Vector3(-0.5f, 0.5f, 0.5f));
         }
-        else if (dir == Vector3Int.right)    // +x
+        else if (dir == Vector3Int.right)
         {
-            vertices.Add(pos + new Vector3(0.5f, -0.5f, 0.5f)); // bl
-            vertices.Add(pos + new Vector3(0.5f, -0.5f, -0.5f)); // br
-            vertices.Add(pos + new Vector3(0.5f, 0.5f, 0.5f)); // tl
-            vertices.Add(pos + new Vector3(0.5f, 0.5f, -0.5f)); // tr
+            vertices.Add(pos + new Vector3(0.5f, -0.5f, 0.5f));
+            vertices.Add(pos + new Vector3(0.5f, -0.5f, -0.5f));
+            vertices.Add(pos + new Vector3(0.5f, 0.5f, 0.5f));
+            vertices.Add(pos + new Vector3(0.5f, 0.5f, -0.5f));
         }
 
         int startIndex = vertices.Count - 4;
@@ -151,17 +154,18 @@ public class Chunk : MonoBehaviour
         triangles.Add(startIndex + 2);
         triangles.Add(startIndex + 0);
 
-        float tileSize = 1f / TextureManager.atlasSize; // fraction size of one tile in uv space
+        float tileHeight = 1f / TextureManager.atlasSize; // fraction size of one tile in uv space
+        float tileWidth = 1f / 8;
 
         // calculate uv rectangle for this id tile in the atlas
-        float uvBottom = id * tileSize;
-        float uvTop = uvBottom + tileSize;
+        float uvBottom = id * tileHeight;
+        float uvTop = uvBottom + tileHeight;
 
         // assign uvs for quad vertices (bottom-left, bottom-right, top-left, top-right)
-        uvs.Add(new Vector2(0, uvBottom));  // bottom-left
-        uvs.Add(new Vector2(1, uvBottom));  // bottom-right
-        uvs.Add(new Vector2(0, uvTop));     // top-left
-        uvs.Add(new Vector2(1, uvTop));     // top-right
+        uvs.Add(new Vector2(tileWidth * i, uvBottom));  // bottom-left
+        uvs.Add(new Vector2(tileWidth * (i + 1), uvBottom));  // bottom-right
+        uvs.Add(new Vector2(tileWidth * i, uvTop));     // top-left
+        uvs.Add(new Vector2(tileWidth * (i + 1 ), uvTop));     // top-right
     }
 
     private bool IsFaceVisible(Vector3Int pos, Vector3Int dir)
@@ -175,16 +179,16 @@ public class Chunk : MonoBehaviour
             return true; // If out of bounds, the face is visible
         }
 
-        return Blocks[neighborPos.x, neighborPos.y, neighborPos.z].id != 1; // Check if the neighboring block is not solid
+        return Blocks[neighborPos.x, neighborPos.y, neighborPos.z].id == 0; // Check if the neighboring block is not solid
     }
 
     private readonly Vector3Int[] directions = new Vector3Int[]
     {
-        Vector3Int.up,
-        Vector3Int.down,
+        Vector3Int.forward,
+        Vector3Int.back,
         Vector3Int.left,
         Vector3Int.right,
-        Vector3Int.forward,
-        Vector3Int.back
+        Vector3Int.up,
+        Vector3Int.down
     };
 }

@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 6244095485613848735}
   - component: {fileID: 33182908857174830}
   - component: {fileID: 7859584082541116445}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: ChunkPrefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -95,10 +95,10 @@ MeshCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 9059245294083506208}
-  m_Material: {fileID: 13400000, guid: 4f062648687e2cd429b14dc3517b5646, type: 2}
+  m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 4294967295
   m_ExcludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -125,8 +125,4 @@ MonoBehaviour:
   meshFilter: {fileID: 1850206645233367375}
   meshRenderer: {fileID: 6244095485613848735}
   meshCollider: {fileID: 33182908857174830}
-  material: {fileID: 0}
-  vertices: []
-  triangles: 
-  uvs: []
   isDirty: 1
