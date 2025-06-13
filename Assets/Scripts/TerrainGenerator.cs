@@ -40,8 +40,8 @@ public class TerrainGenerator : MonoBehaviour
                 foreach (var layer in noiseLayers)
                 {
                     float noise = Mathf.PerlinNoise(
-                        (x + pos.x + layer.offsetX) * layer.scale,
-                        (z + pos.z + layer.offsetZ) * layer.scale
+                        (x + (pos.x * Chunk.CHUNK_SIZE) + layer.offsetX) * layer.scale,
+                        (z + (pos.z * Chunk.CHUNK_SIZE) + layer.offsetZ) * layer.scale
                     );
                     noise *= layer.heightMultiplier; // Scale the noise value
                     noiseValue += noise * layer.weight;
@@ -53,9 +53,13 @@ public class TerrainGenerator : MonoBehaviour
                 for (int y = 0; y < Chunk.CHUNK_SIZE; y++)
                 {
                     var worldY = y + (pos.y * Chunk.CHUNK_SIZE);
-                    if (worldY < noiseValue)
+                    if (worldY == noiseValue)
                     {
-                        blocks[x, y, z] = new Block { id = 1 }; // Solid block
+                        blocks[x, y, z] = new Block { id = 2 }; // Grass block
+                    }
+                    else if (worldY < noiseValue)
+                    {
+                        blocks[x, y, z] = new Block { id = 1 }; // Dirt block
                     }
                     else
                     {

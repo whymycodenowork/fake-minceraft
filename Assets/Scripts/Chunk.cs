@@ -33,14 +33,9 @@ public class Chunk : MonoBehaviour
         meshFilter.sharedMesh = new Mesh();
         meshRenderer.sharedMaterial = TextureManager.material;
     }
-
-    private void Start()
-    {
-        TerrainGenerator.Instance.GenerateTerrain(Blocks, position);
-    }
-
     private void OnEnable()
     {
+        TerrainGenerator.Instance.GenerateTerrain(Blocks, position);
         transform.position = position * Chunk.CHUNK_SIZE; // Set the position of the chunk based on its coordinates
     }
 
