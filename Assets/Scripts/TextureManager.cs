@@ -3,15 +3,17 @@ using UnityEngine;
 
 public static class TextureManager
 {
-    public static readonly Material material; // Texture atlas for blocks
-    public static readonly Texture2D[] ItemTextures; // Textures for Items
-    public static readonly int atlasSize;
+    public static Material material; // Texture atlas for blocks
+    public static Texture2D[] ItemTextures; // Textures for Items
+    public static int atlasSize;
 
-    static TextureManager()
+    public static void CreateTextures()
     {
         // Load all textures in Resources/Textures
         var texture = Resources.Load<Texture2D>("TextureAtlas");
         var textures = Resources.LoadAll<Texture2D>("Images");
+
+        texture.mipMapBias = -1f;
 
         atlasSize = textures.Length;
 

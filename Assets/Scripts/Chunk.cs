@@ -1,13 +1,14 @@
-using UnityEngine;
 using System.Collections.Generic;
-using UnityEditorInternal;
+using System.Threading.Tasks;
+using UnityEngine;
 
+[RequireComponent(typeof(MeshFilter), typeof(MeshRenderer), typeof(MeshCollider))]
 public class Chunk : MonoBehaviour
 {
     /// <summary>
     /// The side length of the chunk in blocks.
     /// </summary>
-    public const int CHUNK_SIZE = 32; // DO NOT CHANGE
+    public const int CHUNK_SIZE = 32;
     public Block[,,] Blocks = new Block[CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE];
 
     /// <summary>
@@ -19,26 +20,23 @@ public class Chunk : MonoBehaviour
     public MeshRenderer meshRenderer;
     public MeshCollider meshCollider;
 
-    private readonly List<Vector3> vertices = new();
-    private readonly List<int> triangles = new();
-    private readonly List<Vector2> uvs = new();
+    private readonly List<Vector3> vertices = new(12 * CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE);
+    private readonly List<int> triangles = new(18 * CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE);
+    private readonly List<Vector2> uvs = new(12 * CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE);
 
     /// <summary>
     /// Flag to indicate if the mesh needs to be updated.
     /// </summary>
-    public bool isDirty = true;
+    public bool isDirty = false;
 
     private void Awake()
     {
-        meshFilter.sharedMesh = new Mesh();
+        meshFilter = GetComponent<MeshFilter>();
+        meshFilter.sharedMesh = new();
+        meshRenderer = GetComponent<MeshRenderer>();
         meshRenderer.sharedMaterial = TextureManager.material;
+        meshCollider = GetComponent<MeshCollider>();
     }
-    private void OnEnable()
-    {
-        TerrainGenerator.Instance.GenerateTerrain(Blocks, position);
-        transform.position = position * Chunk.CHUNK_SIZE; // Set the position of the chunk based on its coordinates
-    }
-
     private void Update()
     {
         if (isDirty)
@@ -48,52 +46,65 @@ public class Chunk : MonoBehaviour
         }
     }
 
-    private void CreateMesh()
+    private async void CreateMesh()
     {
         Mesh mesh = meshFilter.sharedMesh;
-        mesh.Clear();
         vertices.Clear();
         triangles.Clear();
         uvs.Clear();
-        int arbitraryCounter = 0;
-        // Loop through all the blocks
-        for (int x = 0; x < CHUNK_SIZE; x++)
+        await Task.Run(() =>
         {
-            for (int y = 0; y < CHUNK_SIZE; y++)
+            // Loop through all the blocks
+            Vector3Int pos = new();
+            for (int x = 0; x < CHUNK_SIZE; x++)
             {
-                for (int z = 0; z < CHUNK_SIZE; z++)
+                for (int y = 0; y < CHUNK_SIZE; y++)
                 {
-                    // Process each block in the chunk
-                    Block block = Blocks[x, y, z];
-
-                    Vector3Int pos = new(x, y, z);
-
-                    if (block.id == 0)  {
-                        arbitraryCounter++;
-                        continue; // Skip empty blocks
-                    }
-
-                    for (int i = 0; i < 6; i++) // Check all 6 faces of the block
+                    for (int z = 0; z < CHUNK_SIZE; z++)
                     {
-                        Vector3Int dir = directions[i];
-                        if (IsFaceVisible(pos, dir)) AddQuad(pos, dir, block.id, i);
+                        // Process each block in the chunk
+                        pos.Set(x, y, z);
+                        Block block = Blocks[x, y, z];
+
+                        if (block.id == 0)
+                        {
+                            continue; // Skip empty blocks
+                        }
+
+                        for (int i = 0; i < 6; i++) // Check all 6 faces of the block
+                        {
+                            Vector3Int dir = directions[i];
+                            if (IsFaceVisible(pos, dir))
+                                AddQuad(pos, dir, block.id, i);
+                        }
                     }
                 }
             }
+        });
+
+        // Check if the chunk is still active before applying the mesh
+        if (!gameObject.activeInHierarchy)
+        {
+            return;
         }
 
-        if (arbitraryCounter == CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE)
-        {
-            gameObject.SetActive(false);
-        }
+        mesh.Clear();
         mesh.vertices = vertices.ToArray();
         mesh.triangles = triangles.ToArray();
         mesh.uv = uvs.ToArray();
-
         mesh.RecalculateBounds();
         mesh.RecalculateNormals();
 
-        meshCollider.sharedMesh = mesh;
+        if (mesh.vertexCount == 0)
+        {
+            meshCollider.sharedMesh = null; // Disable the mesh collider if no vertices are present
+            meshCollider.enabled = false;
+        }
+        else
+        {
+            meshCollider.sharedMesh = mesh;
+            meshCollider.enabled = true;
+        }
     }
 
     private void AddQuad(Vector3Int pos, Vector3Int dir, int id, int i)
@@ -160,21 +171,37 @@ public class Chunk : MonoBehaviour
         uvs.Add(new Vector2(tileWidth * i, uvBottom));  // bottom-left
         uvs.Add(new Vector2(tileWidth * (i + 1), uvBottom));  // bottom-right
         uvs.Add(new Vector2(tileWidth * i, uvTop));     // top-left
-        uvs.Add(new Vector2(tileWidth * (i + 1 ), uvTop));     // top-right
+        uvs.Add(new Vector2(tileWidth * (i + 1), uvTop));     // top-right
     }
 
     private bool IsFaceVisible(Vector3Int pos, Vector3Int dir)
     {
         Vector3Int neighborPos = pos + dir;
-        // Check if the neighbor position is within bounds of the chunk
-        if (neighborPos.x < 0 || neighborPos.x >= CHUNK_SIZE ||
-            neighborPos.y < 0 || neighborPos.y >= CHUNK_SIZE ||
-            neighborPos.z < 0 || neighborPos.z >= CHUNK_SIZE)
+
+        if (neighborPos.x >= 0 && neighborPos.x < CHUNK_SIZE &&
+            neighborPos.y >= 0 && neighborPos.y < CHUNK_SIZE &&
+            neighborPos.z >= 0 && neighborPos.z < CHUNK_SIZE)
         {
-            return true; // If out of bounds, the face is visible
+            return Blocks[neighborPos.x, neighborPos.y, neighborPos.z].id == 0;
         }
 
-        return Blocks[neighborPos.x, neighborPos.y, neighborPos.z].id == 0; // Check if the neighboring block is not solid
+        Vector3Int worldNeighborPos = position * CHUNK_SIZE + neighborPos;
+        Vector3Int neighborChunkPos = new(
+            worldNeighborPos.x >> 5, // Divide by 32
+            worldNeighborPos.y >> 5,
+            worldNeighborPos.z >> 5
+        );
+        Vector3Int localNeighborPos = new(
+            worldNeighborPos.x & (CHUNK_SIZE - 1),
+            worldNeighborPos.y & (CHUNK_SIZE - 1),
+            worldNeighborPos.z & (CHUNK_SIZE - 1)
+        );
+
+        if (ChunkManager.Instance.ActiveChunks.TryGetValue(neighborChunkPos, out Chunk neighborChunk))
+        {
+            return neighborChunk.Blocks[localNeighborPos.x, localNeighborPos.y, localNeighborPos.z].id == 0;
+        }
+        return false;
     }
 
     private readonly Vector3Int[] directions = new Vector3Int[]

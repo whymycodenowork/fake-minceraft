@@ -3,7 +3,7 @@ using UnityEngine;
 public class TerrainGenerator : MonoBehaviour
 {
     public static TerrainGenerator Instance { get; private set; }
-    
+
     private void Awake()
     {
         if (Instance == null)
@@ -27,7 +27,10 @@ public class TerrainGenerator : MonoBehaviour
         public float heightMultiplier;
     }
 
-    public NoiseLayer[] noiseLayers;
+    [SerializeField]
+    private int seaLevel = 32;
+    [SerializeField]
+    private NoiseLayer[] noiseLayers;
 
     public void GenerateTerrain(Block[,,] blocks, Vector3Int pos)
     {
@@ -49,6 +52,7 @@ public class TerrainGenerator : MonoBehaviour
                     totalWeight += layer.weight;
                 }
                 noiseValue /= totalWeight;
+                noiseValue = Mathf.Floor(noiseValue);
                 // Simple height-based terrain generation
                 for (int y = 0; y < Chunk.CHUNK_SIZE; y++)
                 {
@@ -59,7 +63,12 @@ public class TerrainGenerator : MonoBehaviour
                     }
                     else if (worldY < noiseValue)
                     {
-                        blocks[x, y, z] = new Block { id = 1 }; // Dirt block
+                        if (worldY > noiseValue - 6) blocks[x, y, z] = new Block { id = 1 }; // Dirt block
+                        else blocks[x, y, z] = new Block { id = 4 }; // Stone block
+                    }
+                    else if (worldY > noiseValue && worldY < seaLevel)
+                    {
+                        blocks[x, y, z] = new Block { id = 3 }; // Water block
                     }
                     else
                     {

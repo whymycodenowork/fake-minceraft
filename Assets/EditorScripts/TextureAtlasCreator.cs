@@ -29,7 +29,7 @@ public class TextureAtlasCreator : MonoBehaviour
             var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(imagePath);
 
             // Copy the pixels of the current texture into the atlas at the correct position
-            textureAtlas.SetPixels(0, yOffset, texture.width, texture.height, texture.GetPixels());
+            textureAtlas.SetPixels32(0, yOffset, texture.width, texture.height, texture.GetPixels32());
 
             // Update the offset to place the next texture beneath the previous one
             yOffset += texture.height;
