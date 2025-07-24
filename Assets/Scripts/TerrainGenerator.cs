@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class TerrainGenerator : MonoBehaviour
+public sealed class TerrainGenerator : MonoBehaviour
 {
     public static TerrainGenerator Instance { get; private set; }
 
@@ -9,6 +9,7 @@ public class TerrainGenerator : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
+            DontDestroyOnLoad(gameObject);
         }
         else
         {
@@ -59,20 +60,33 @@ public class TerrainGenerator : MonoBehaviour
                     var worldY = y + (pos.y * Chunk.CHUNK_SIZE);
                     if (worldY == noiseValue)
                     {
-                        blocks[x, y, z] = new Block { id = 2 }; // Grass block
+                        if (noiseValue < seaLevel)
+                        {
+                            blocks[x, y, z] = new Block(1); // Dirt block
+                        }
+                        else
+                        {
+                            blocks[x, y, z] = new Block(2); // Grass block
+                        }
                     }
                     else if (worldY < noiseValue)
                     {
-                        if (worldY > noiseValue - 6) blocks[x, y, z] = new Block { id = 1 }; // Dirt block
-                        else blocks[x, y, z] = new Block { id = 4 }; // Stone block
+                        if (worldY > noiseValue - 6)
+                        {
+                            blocks[x, y, z] = new Block (1); // Dirt block
+                        }
+                        else
+                        {
+                            blocks[x, y, z] = new Block(4); // Stone block
+                        }
                     }
-                    else if (worldY > noiseValue && worldY < seaLevel)
+                    else if (worldY > noiseValue && worldY <= seaLevel)
                     {
-                        blocks[x, y, z] = new Block { id = 3 }; // Water block
+                        blocks[x, y, z] = new Block (3); // Water block
                     }
                     else
                     {
-                        blocks[x, y, z] = new Block { id = 0 }; // Air block
+                        blocks[x, y, z] = new Block (0); // Air block
                     }
                 }
             }

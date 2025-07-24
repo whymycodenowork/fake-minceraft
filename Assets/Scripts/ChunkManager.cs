@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -19,11 +20,18 @@ public class ChunkManager : MonoBehaviour
             Destroy(gameObject);
         }
         TextureManager.CreateTextures();
+
+        SaveSystem.saveDataPath = Application.persistentDataPath; // Set the save data path
     }
     /// <summary>
-    /// How far to render chunks from the player.
+    /// How far to render chunks horizontally (x and z dimensions) from the player.
     /// </summary>
-    public int renderDistance = 3;
+    public int renderDistanceHorizontal = 5;
+
+    /// <summary>
+    /// How far to render chunks vertically (y dimension) from the player.
+    /// </summary>
+    public int renderDistanceVertical = 3;
 
     /// <summary>
     /// Prefab for the chunk to instantiate.
@@ -41,108 +49,152 @@ public class ChunkManager : MonoBehaviour
     public Queue<Chunk> InactiveChunks = new();
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    private void Start()
     {
-        _ = StartUpdateLoop(); // Start the update loop asynchronously
+        _ = StartCoroutine(ChunkUpdateLoop());
+    }
+
+    private void Update()
+    {
+        SaveSystem.Update(Time.deltaTime); // Update the save system timer
     }
 
     private void OnApplicationQuit()
     {
+        SaveSystem.SaveAllChunksToDisk();
         running = false; // Stop the update loop when the application quits
     }
 
     public bool running = true;
-    private async Task StartUpdateLoop()
+
+    private readonly ConcurrentQueue<(Vector3Int pos, Block[,,] blocks)> readyChunks = new();
+    [SerializeField] private int chunksPerFrame = 4;
+
+    private IEnumerator ChunkUpdateLoop()
     {
         while (running)
         {
-            UpdateChunks();
-            await Task.Yield(); // Yield to allow other tasks to run
+            Vector3Int playerChunkCoord = Vector3Int.FloorToInt(Player.Instance.transform.position / Chunk.CHUNK_SIZE);
+
+            // Collect chunk positions within render distance
+            List<Vector3Int> neededChunks = GetChunksInRange(playerChunkCoord);
+
+            // Dispatch chunk generation/loading in parallel
+            foreach (Vector3Int chunkPos in neededChunks)
+            {
+                if (!ActiveChunks.ContainsKey(chunkPos))
+                {
+                    Task.Run(() => LoadOrGenerateChunk(chunkPos));
+                }
+            }
+
+            // Activate a limited number of ready chunks per frame
+            int activatedThisFrame = 0;
+            while (readyChunks.TryDequeue(out var data) && activatedThisFrame < chunksPerFrame)
+            {
+                ActivateChunk(data.pos, data.blocks);
+                activatedThisFrame++;
+            }
+
+            // Unload distant chunks
+            UnloadDistantChunks(playerChunkCoord);
+            Debug.Log("Completed chunk update loop.");
+            yield return null;
         }
     }
 
-    // Update is called once per frame.
-    void UpdateChunks()
+    private List<Vector3Int> GetChunksInRange(Vector3Int playerChunkCoord)
     {
-        UnityMainThread(() =>
+        List<Vector3Int> neededChunks = new();
+
+        for (int x = playerChunkCoord.x - renderDistanceHorizontal; x <= playerChunkCoord.x + renderDistanceHorizontal; x++)
         {
-            var playerChunkCoord = Vector3Int.FloorToInt(Player.Instance.transform.position / Chunk.CHUNK_SIZE);
-
-            // Activation: Ensure chunks within render distance are active.
-            for (int x = playerChunkCoord.x - renderDistance; x <= playerChunkCoord.x + renderDistance; x++)
+            for (int y = playerChunkCoord.y - renderDistanceVertical; y <= playerChunkCoord.y + renderDistanceVertical; y++)
             {
-                for (int y = playerChunkCoord.y - renderDistance; y <= playerChunkCoord.y + renderDistance; y++)
+                for (int z = playerChunkCoord.z - renderDistanceHorizontal; z <= playerChunkCoord.z + renderDistanceHorizontal; z++)
                 {
-                    for (int z = playerChunkCoord.z - renderDistance; z <= playerChunkCoord.z + renderDistance; z++)
-                    {
-                        Vector3Int chunkPos = new(x, y, z);
-                        if (!ActiveChunks.ContainsKey(chunkPos))
-                        {
-                            Chunk chunk;
-                            if (InactiveChunks.Count > 0)
-                            {
-                                // Reuse chunk from the inactive pool.
-                                chunk = InactiveChunks.Dequeue();
-                                chunk.meshFilter.sharedMesh.Clear();
-                            }
-                            else
-                            {
-                                // Instantiate a new chunk.
-                                chunk = Instantiate(chunkPrefab).GetComponent<Chunk>();
-                            }
-
-                            chunk.position = chunkPos;
-                            chunk.transform.position = chunk.position * Chunk.CHUNK_SIZE;
-                            TerrainGenerator.Instance.GenerateTerrain(chunk.Blocks, chunk.position);
-                            ActiveChunks.Add(chunkPos, chunk);
-                            chunk.meshCollider.sharedMesh = null;
-                            chunk.gameObject.SetActive(true);
-                            chunk.isDirty = true;
-                        }
-                    }
+                    neededChunks.Add(new Vector3Int(x, y, z));
                 }
             }
+        }
 
-            // Deactivation: Remove chunks outside the render distance.
-            var chunksToRemove = new List<Vector3Int>();
-            foreach (var kvp in ActiveChunks)
-            {
-                var chunk = kvp.Value;
-                var pos = kvp.Key;
-                if (pos.x > playerChunkCoord.x + renderDistance || pos.x < playerChunkCoord.x - renderDistance ||
-                    pos.y > playerChunkCoord.y + renderDistance || pos.y < playerChunkCoord.y - renderDistance ||
-                    pos.z > playerChunkCoord.z + renderDistance || pos.z < playerChunkCoord.z - renderDistance)
-                {
-                    chunksToRemove.Add(pos);
-                    chunk.meshFilter.sharedMesh.Clear();
-                    chunk.gameObject.SetActive(false);
-                    InactiveChunks.Enqueue(chunk);
-                }
-            }
-
-            foreach (var key in chunksToRemove)
-            {
-                ActiveChunks.Remove(key);
-            }
+        neededChunks.Sort((a, b) =>
+        {
+            int da = ManhattanDistance(a, playerChunkCoord);
+            int db = ManhattanDistance(b, playerChunkCoord);
+            return da.CompareTo(db);
         });
+
+        return neededChunks;
     }
 
-    private void UnityMainThread(Action action)
+    private void LoadOrGenerateChunk(Vector3Int chunkPos)
     {
-        if (action == null)
+
+        if (!SaveSystem.LoadChunk(chunkPos, out Block[,,] blocks))
         {
-            return;
+            blocks = new Block[Chunk.CHUNK_SIZE, Chunk.CHUNK_SIZE, Chunk.CHUNK_SIZE];
+            TerrainGenerator.Instance.GenerateTerrain(blocks, chunkPos);
         }
 
-        if (Application.isPlaying)
+        readyChunks.Enqueue((chunkPos, blocks));
+        Debug.Log($"Chunk at {chunkPos} is ready for activation.");
+    }
+
+    private void ActivateChunk(Vector3Int chunkPos, Block[,,] blocks)
+    {
+        Chunk chunk;
+        if (InactiveChunks.Count > 0)
         {
-            _ = StartCoroutine(ExecuteOnMainThread(action));
+            chunk = InactiveChunks.Dequeue();
+            chunk.meshFilter.sharedMesh.Clear();
+        }
+        else
+        {
+            chunk = Instantiate(chunkPrefab, transform).GetComponent<Chunk>();
+        }
+
+        chunk.position = chunkPos;
+        chunk.Blocks = blocks;
+        chunk.transform.position = chunkPos * Chunk.CHUNK_SIZE;
+
+        chunk.meshCollider.sharedMesh = null;
+        chunk.gameObject.SetActive(true);
+        chunk.isDirty = true;
+
+        ActiveChunks[chunkPos] = chunk;
+        Debug.Log($"Activated chunk at {chunkPos}.");
+    }
+
+    private void UnloadDistantChunks(Vector3Int playerChunkCoord)
+    {
+        List<Vector3Int> chunksToRemove = new();
+
+        foreach (var kvp in ActiveChunks)
+        {
+            Vector3Int pos = kvp.Key;
+            if (Mathf.Abs(pos.x - playerChunkCoord.x) > renderDistanceHorizontal ||
+                Mathf.Abs(pos.z - playerChunkCoord.z) > renderDistanceHorizontal ||
+                Mathf.Abs(pos.y - playerChunkCoord.y) > renderDistanceVertical)
+            {
+                chunksToRemove.Add(pos);
+
+                Chunk chunk = kvp.Value;
+                chunk.meshFilter.sharedMesh.Clear();
+                chunk.gameObject.SetActive(false);
+                SaveSystem.SaveChunk(chunk.position, chunk.Blocks);
+                InactiveChunks.Enqueue(chunk);
+            }
+        }
+
+        foreach (Vector3Int key in chunksToRemove)
+        {
+            ActiveChunks.Remove(key);
         }
     }
 
-    private static IEnumerator ExecuteOnMainThread(Action action)
+    private int ManhattanDistance(Vector3Int a, Vector3Int b)
     {
-        yield return null; // Wait for the next frame to ensure we are on the main thread
-        action();
+        return Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y) + Mathf.Abs(a.z - b.z);
     }
 }
