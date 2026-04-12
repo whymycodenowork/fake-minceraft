@@ -78,22 +78,23 @@ public static class SaveSystem
     /// <summary>
     /// 
     /// </summary>
-    /// <param name="coord">The coordinates of the chunk</param>
-    /// <param name="blocks">The blocks of the chunk</param>
-    /// <returns>True if the chunk was loaded successfully, false if not</returns>
-    public static bool LoadChunk(Vector3Int coord, out Block[,,] blocks)
+    /// <param name="coord">The coordinates of the chunk.</param>
+    /// <param name="blocks">The blocks of the chunk.</param>
+    /// <returns>True if the chunk was loaded successfully, false if not.</returns>
+    public static bool TryLoadChunk(Vector3Int coord, out Block[,,] blocks)
     {
         if (chunkCache.TryGetValue(coord, out blocks))
         {
             return true;
         }
-
+        
         string filePath = GetSaveFilePath(coord);
         if (File.Exists(filePath))
         {
             LoadChunkFromDisk(filePath, out blocks);
             return true;
         }
+        blocks = new Block[Chunk.CHUNK_SIZE, Chunk.CHUNK_SIZE, Chunk.CHUNK_SIZE];
         return false;
     }
 

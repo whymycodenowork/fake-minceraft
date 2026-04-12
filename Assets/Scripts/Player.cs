@@ -241,7 +241,7 @@ public class Player : MonoBehaviour
             _ = controller.Move(velocity * Time.deltaTime);
         }
     }
-    // i should give these more descriptive names
+    // TODO: more descriptive method name
     private void HandleMouse()
     {
         bool rightClicked = Input.GetMouseButtonDown(1);

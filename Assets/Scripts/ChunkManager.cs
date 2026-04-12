@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -8,6 +7,16 @@ using UnityEngine;
 public class ChunkManager : MonoBehaviour
 {
     public static ChunkManager Instance { get; private set; }
+
+    public int renderDistance = 3;
+    public GameObject chunkPrefab;
+
+    public Dictionary<Vector3Int, Chunk> ActiveChunks = new();
+    public Queue<Chunk> InactiveChunks = new();
+    public Dictionary<Vector3Int, bool> PendingChunks = new();
+
+    private Transform playerTransform;
+    private Vector3Int lastPlayerChunk;
 
     private void Awake()
     {
@@ -18,131 +27,74 @@ public class ChunkManager : MonoBehaviour
         else
         {
             Destroy(gameObject);
+            return;
         }
+
         TextureManager.CreateTextures();
-
-        SaveSystem.saveDataPath = Application.persistentDataPath; // Set the save data path
+        SaveSystem.saveDataPath = Application.persistentDataPath;
     }
-    /// <summary>
-    /// How far to render chunks horizontally (x and z dimensions) from the player.
-    /// </summary>
-    public int renderDistanceHorizontal = 5;
 
-    /// <summary>
-    /// How far to render chunks vertically (y dimension) from the player.
-    /// </summary>
-    public int renderDistanceVertical = 3;
-
-    /// <summary>
-    /// Prefab for the chunk to instantiate.
-    /// </summary>
-    public GameObject chunkPrefab;
-
-    /// <summary>
-    /// The chunks that are currently active in the world.
-    /// </summary>
-    public Dictionary<Vector3Int, Chunk> ActiveChunks = new();
-
-    /// <summary>
-    /// The chunks that are currently inactive and are waiting to be activated.
-    /// </summary>
-    public Queue<Chunk> InactiveChunks = new();
-
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     private void Start()
     {
-        _ = StartCoroutine(ChunkUpdateLoop());
+        playerTransform = Player.Instance.transform;
+        lastPlayerChunk = GetPlayerChunkCoord();
     }
 
     private void Update()
     {
-        SaveSystem.Update(Time.deltaTime); // Update the save system timer
-    }
-
-    private void OnApplicationQuit()
-    {
-        SaveSystem.SaveAllChunksToDisk();
-        running = false; // Stop the update loop when the application quits
-    }
-
-    public bool running = true;
-
-    private readonly ConcurrentQueue<(Vector3Int pos, Block[,,] blocks)> readyChunks = new();
-    [SerializeField] private int chunksPerFrame = 4;
-
-    private IEnumerator ChunkUpdateLoop()
-    {
-        while (running)
+        Vector3Int currentChunk = GetPlayerChunkCoord();
+        if (currentChunk != lastPlayerChunk)
         {
-            Vector3Int playerChunkCoord = Vector3Int.FloorToInt(Player.Instance.transform.position / Chunk.CHUNK_SIZE);
-
-            // Collect chunk positions within render distance
-            List<Vector3Int> neededChunks = GetChunksInRange(playerChunkCoord);
-
-            // Dispatch chunk generation/loading in parallel
-            foreach (Vector3Int chunkPos in neededChunks)
-            {
-                if (!ActiveChunks.ContainsKey(chunkPos))
-                {
-                    Task.Run(() => LoadOrGenerateChunk(chunkPos));
-                }
-            }
-
-            // Activate a limited number of ready chunks per frame
-            int activatedThisFrame = 0;
-            while (readyChunks.TryDequeue(out var data) && activatedThisFrame < chunksPerFrame)
-            {
-                ActivateChunk(data.pos, data.blocks);
-                activatedThisFrame++;
-            }
-
-            // Unload distant chunks
-            UnloadDistantChunks(playerChunkCoord);
-            Debug.Log("Completed chunk update loop.");
-            yield return null;
+            lastPlayerChunk = currentChunk;
+            UpdateChunks();
         }
     }
 
-    private List<Vector3Int> GetChunksInRange(Vector3Int playerChunkCoord)
+    private Vector3Int GetPlayerChunkCoord()
     {
-        List<Vector3Int> neededChunks = new();
+        return Vector3Int.FloorToInt(playerTransform.position / Chunk.CHUNK_SIZE);
+    }
 
-        for (int x = playerChunkCoord.x - renderDistanceHorizontal; x <= playerChunkCoord.x + renderDistanceHorizontal; x++)
+    private void UpdateChunks()
+    {
+        Vector3Int playerChunk = lastPlayerChunk;
+        HashSet<Vector3Int> desiredChunks = new();
+
+        for (int x = -renderDistance; x <= renderDistance; x++)
         {
-            for (int y = playerChunkCoord.y - renderDistanceVertical; y <= playerChunkCoord.y + renderDistanceVertical; y++)
+            for (int y = -renderDistance; y <= renderDistance; y++)
             {
-                for (int z = playerChunkCoord.z - renderDistanceHorizontal; z <= playerChunkCoord.z + renderDistanceHorizontal; z++)
+                for (int z = -renderDistance; z <= renderDistance; z++)
                 {
-                    neededChunks.Add(new Vector3Int(x, y, z));
+                    Vector3Int pos = playerChunk + new Vector3Int(x, y, z);
+                    _ = desiredChunks.Add(pos);
+                    if (!ActiveChunks.ContainsKey(pos) && !PendingChunks.ContainsKey(pos))
+                    {
+                        PrepareChunk(pos);
+                    }
                 }
             }
         }
 
-        neededChunks.Sort((a, b) =>
+        List<Vector3Int> keysToRemove = new();
+        foreach (KeyValuePair<Vector3Int, Chunk> kvp in ActiveChunks)
         {
-            int da = ManhattanDistance(a, playerChunkCoord);
-            int db = ManhattanDistance(b, playerChunkCoord);
-            return da.CompareTo(db);
-        });
-
-        return neededChunks;
-    }
-
-    private void LoadOrGenerateChunk(Vector3Int chunkPos)
-    {
-
-        if (!SaveSystem.LoadChunk(chunkPos, out Block[,,] blocks))
-        {
-            blocks = new Block[Chunk.CHUNK_SIZE, Chunk.CHUNK_SIZE, Chunk.CHUNK_SIZE];
-            TerrainGenerator.Instance.GenerateTerrain(blocks, chunkPos);
+            if (!desiredChunks.Contains(kvp.Key))
+            {
+                DeactivateChunk(kvp.Key, kvp.Value);
+                keysToRemove.Add(kvp.Key);
+            }
         }
 
-        readyChunks.Enqueue((chunkPos, blocks));
-        Debug.Log($"Chunk at {chunkPos} is ready for activation.");
+        foreach (Vector3Int key in keysToRemove)
+        {
+            _ = ActiveChunks.Remove(key);
+        }
     }
 
-    private void ActivateChunk(Vector3Int chunkPos, Block[,,] blocks)
+    private void ActivateChunk(Vector3Int pos, Block[,,] blocks)
     {
+        Debug.Log($"Activating Chunk.");
         Chunk chunk;
         if (InactiveChunks.Count > 0)
         {
@@ -151,50 +103,67 @@ public class ChunkManager : MonoBehaviour
         }
         else
         {
-            chunk = Instantiate(chunkPrefab, transform).GetComponent<Chunk>();
+            chunk = Instantiate(chunkPrefab).GetComponent<Chunk>();
         }
 
-        chunk.position = chunkPos;
+        chunk.position = pos;
         chunk.Blocks = blocks;
-        chunk.transform.position = chunkPos * Chunk.CHUNK_SIZE;
+        chunk.transform.position = pos * Chunk.CHUNK_SIZE;
 
         chunk.meshCollider.sharedMesh = null;
         chunk.gameObject.SetActive(true);
         chunk.isDirty = true;
 
-        ActiveChunks[chunkPos] = chunk;
-        Debug.Log($"Activated chunk at {chunkPos}.");
+        ActiveChunks[pos] = chunk;
     }
 
-    private void UnloadDistantChunks(Vector3Int playerChunkCoord)
+    private void PrepareChunk(Vector3Int pos)
     {
-        List<Vector3Int> chunksToRemove = new();
+        Debug.Log($"Preparing Chunk.");
+        PendingChunks[pos] = false;
 
-        foreach (var kvp in ActiveChunks)
+        _ = Task.Run(() =>
         {
-            Vector3Int pos = kvp.Key;
-            if (Mathf.Abs(pos.x - playerChunkCoord.x) > renderDistanceHorizontal ||
-                Mathf.Abs(pos.z - playerChunkCoord.z) > renderDistanceHorizontal ||
-                Mathf.Abs(pos.y - playerChunkCoord.y) > renderDistanceVertical)
+            Block[,,] blocks;
+            try
             {
-                chunksToRemove.Add(pos);
-
-                Chunk chunk = kvp.Value;
-                chunk.meshFilter.sharedMesh.Clear();
-                chunk.gameObject.SetActive(false);
-                SaveSystem.SaveChunk(chunk.position, chunk.Blocks);
-                InactiveChunks.Enqueue(chunk);
+                if (!SaveSystem.TryLoadChunk(pos, out blocks))
+                {
+                    blocks = new Block[Chunk.CHUNK_SIZE, Chunk.CHUNK_SIZE, Chunk.CHUNK_SIZE];
+                    TerrainGenerator.Instance.GenerateTerrain(blocks, pos);
+                }
             }
-        }
+            catch (Exception e)
+            {
+                Debug.LogError($"Error loading chunk at {pos}: {e.Message}");
+                blocks = new Block[Chunk.CHUNK_SIZE, Chunk.CHUNK_SIZE, Chunk.CHUNK_SIZE];
+            }
 
-        foreach (Vector3Int key in chunksToRemove)
-        {
-            ActiveChunks.Remove(key);
-        }
+            MainThread(() =>
+            {
+                ActivateChunk(pos, blocks);
+                _ = PendingChunks.Remove(pos);
+            });
+        });
     }
 
-    private int ManhattanDistance(Vector3Int a, Vector3Int b)
+    private void DeactivateChunk(Vector3Int pos, Chunk chunk)
     {
-        return Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y) + Mathf.Abs(a.z - b.z);
+        Debug.Log($"Deactivating Chunk.");
+        SaveSystem.SaveChunk(pos, chunk.Blocks);
+        chunk.meshFilter.sharedMesh.Clear();
+        chunk.gameObject.SetActive(false);
+        InactiveChunks.Enqueue(chunk);
+    }
+
+    private void MainThread(Action action)
+    {
+        _ = StartCoroutine(WaitForEndOfFrame(action));
+    }
+
+    private IEnumerator WaitForEndOfFrame(Action action)
+    {
+        yield return null;
+        action();
     }
 }
